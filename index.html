@@ -6,6 +6,7 @@
 <title>Santos Brother — Sistema de Gestión</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --bg: #0f0f0f;
@@ -163,9 +164,33 @@ input[type=number] { font-family: var(--mono); }
 .gap { margin-bottom: 16px; }
 .flex { display: flex; align-items: center; gap: 8px; }
 .flex-between { display: flex; align-items: center; justify-content: space-between; }
+
+/* LOGIN */
+.login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 100%; max-width: 380px; }
+.login-logo { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--text3); font-weight: 600; margin-bottom: 4px; }
+.login-title { font-size: 22px; font-weight: 700; margin-bottom: 28px; }
+.login-box label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); font-weight: 600; display: block; margin-bottom: 5px; }
+.login-box input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; color: var(--text); font-family: var(--font); font-size: 14px; outline: none; margin-bottom: 14px; transition: border-color .15s; }
+.login-box input:focus { border-color: var(--green); }
+.login-btn { width: 100%; background: var(--green); color: #000; border: none; border-radius: 8px; padding: 12px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: var(--font); margin-top: 4px; transition: opacity .15s; }
+.login-btn:hover { opacity: .85; }
+.login-error { color: var(--red); font-size: 13px; margin-top: 10px; min-height: 18px; text-align: center; }
 </style>
 </head>
 <body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="login-screen">
+  <div class="login-box">
+    <div class="login-logo">SB Sistema</div>
+    <div class="login-title">Santos Brother</div>
+    <div><label>Email</label><input id="login-email" type="email" placeholder="tu@email.com" onkeydown="if(event.key==='Enter')loginSubmit()"></div>
+    <div><label>Contraseña</label><input id="login-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginSubmit()"></div>
+    <button class="login-btn" onclick="loginSubmit()" id="login-btn">Ingresar</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
 
 <nav class="sidebar">
   <div class="sidebar-brand">
@@ -215,9 +240,10 @@ input[type=number] { font-family: var(--mono); }
 
   <div class="sidebar-footer">
     <div class="sidebar-user">
-      <strong>Agustín Santos</strong>
+      <strong id="sidebar-email">—</strong>
       Santos Brother
     </div>
+    <button class="btn btn-secondary btn-sm" onclick="cerrarSesion()" style="width:100%;margin-top:10px">Cerrar sesión</button>
   </div>
 </nav>
 
@@ -1080,9 +1106,41 @@ function exportarPDF() {
   setTimeout(() => w.print(), 500);
 }
 
-// INIT
-window.addEventListener('load', () => {
+// AUTH
+const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loginSubmit() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const btn = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  btn.textContent = 'Ingresando...'; btn.disabled = true;
+  const { data, error } = await sbClient.auth.signInWithPassword({ email, password: pass });
+  btn.textContent = 'Ingresar'; btn.disabled = false;
+  if (error) { errEl.textContent = 'Email o contraseña incorrectos'; return; }
+  mostrarApp(data.user);
+}
+
+function mostrarApp(user) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('sidebar-email').textContent = user.email;
   cargarHome();
+}
+
+async function cerrarSesion() {
+  await sbClient.auth.signOut();
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-pass').value = '';
+}
+
+// INIT
+window.addEventListener('load', async () => {
+  const { data } = await sbClient.auth.getSession();
+  if (data.session) {
+    mostrarApp(data.session.user);
+  }
 });
 </script>
 </body>
