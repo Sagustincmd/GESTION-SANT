@@ -554,14 +554,15 @@ async function cargarInventario() {
   renderInventario();
 }
 
+function matchTerminos(p, q) {
+  const terminos = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const campos = [p.modelo||'', p.marca||'', p.color||'', String(p.talle||'')].map(c => c.toLowerCase());
+  return terminos.every(t => campos.some(c => c.includes(t)));
+}
+
 function filtrarInventario() {
-  const q = document.getElementById('inv-search').value.toLowerCase();
-  invFiltrado = allProductos.filter(p =>
-    (p.modelo||'').toLowerCase().includes(q) ||
-    (p.marca||'').toLowerCase().includes(q) ||
-    (p.color||'').toLowerCase().includes(q) ||
-    (p.talle||'').toString().includes(q)
-  );
+  const q = document.getElementById('inv-search').value;
+  invFiltrado = q.trim() ? allProductos.filter(p => matchTerminos(p, q)) : [...allProductos];
   renderInventario();
 }
 
@@ -702,9 +703,7 @@ function buscarProductoVenta() {
   const q = document.getElementById('venta-prod-search').value.toLowerCase();
   const dd = document.getElementById('autocomplete-dropdown');
   if (q.length < 2) { dd.style.display='none'; return; }
-  const matches = allProductos.filter(p =>
-    (p.modelo||'').toLowerCase().includes(q) || (p.marca||'').toLowerCase().includes(q) || (p.talle||'').toString().includes(q)
-  ).slice(0, 12);
+  const matches = allProductos.filter(p => matchTerminos(p, q)).slice(0, 12);
   if (!matches.length) { dd.style.display='none'; return; }
   const inp = document.getElementById('venta-prod-search');
   const rect = inp.getBoundingClientRect();
