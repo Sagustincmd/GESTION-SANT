@@ -613,7 +613,10 @@ function renderInventario() {
         </div>
       </td>
       <td>${estado}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="eliminarProducto('${p.id}')">✕</button></td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-secondary btn-sm" onclick="abrirEditar('${p.id}')">✏</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarProducto('${p.id}')">✕</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -1098,7 +1101,31 @@ function exportarPDF() {
     </tr>
     </tbody>
   </table>
-  </body></html>`;
+  
+<!-- MODAL EDITAR PRODUCTO -->
+<div id="modal-editar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:600px;margin:20px">
+    <h3 style="margin-bottom:20px;font-size:16px">Editar producto</h3>
+    <input type="hidden" id="edit-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div><label>Modelo</label><input id="edit-modelo"></div>
+      <div><label>Marca</label><input id="edit-marca"></div>
+      <div><label>Color</label><input id="edit-color"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+      <div><label>Talle</label><input id="edit-talle"></div>
+      <div><label>Costo ($)</label><input id="edit-costo" type="number"></div>
+      <div><label>Precio ($)</label><input id="edit-precio" type="number"></div>
+      <div><label>Stock</label><input id="edit-stock" type="number"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="cerrarEditar()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEditar()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+</body></html>`;
 
   const w = window.open('', '_blank');
   w.document.write(html);
@@ -1143,5 +1170,29 @@ window.addEventListener('load', async () => {
   }
 });
 </script>
+
+<!-- MODAL EDITAR PRODUCTO -->
+<div id="modal-editar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:600px;margin:20px">
+    <h3 style="margin-bottom:20px;font-size:16px">Editar producto</h3>
+    <input type="hidden" id="edit-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div><label>Modelo</label><input id="edit-modelo"></div>
+      <div><label>Marca</label><input id="edit-marca"></div>
+      <div><label>Color</label><input id="edit-color"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+      <div><label>Talle</label><input id="edit-talle"></div>
+      <div><label>Costo ($)</label><input id="edit-costo" type="number"></div>
+      <div><label>Precio ($)</label><input id="edit-precio" type="number"></div>
+      <div><label>Stock</label><input id="edit-stock" type="number"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="cerrarEditar()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEditar()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
