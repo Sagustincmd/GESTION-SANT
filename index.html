@@ -1101,7 +1101,23 @@ function exportarPDF() {
     </tr>
     </tbody>
   </table>
-  
+        <div><label>Marca</label><input id="edit-marca"></div>
+      <div><label>Color</label><input id="edit-color"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+      <div><label>Talle</label><input id="edit-talle"></div>
+      <div><label>Costo ($)</label><input id="edit-costo" type="number"></div>
+      <div><label>Precio ($)</label><input id="edit-precio" type="number"></div>
+      <div><label>Stock</label><input id="edit-stock" type="number"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="cerrarEditar()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEditar()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- MODAL EDITAR PRODUCTO -->
 <div id="modal-editar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:600px;margin:20px">
@@ -1124,7 +1140,6 @@ function exportarPDF() {
     </div>
   </div>
 </div>
-
 </body></html>`;
 
   const w = window.open('', '_blank');
@@ -1169,15 +1184,43 @@ window.addEventListener('load', async () => {
     mostrarApp(data.session.user);
   }
 });
-</script>
 
-<!-- MODAL EDITAR PRODUCTO -->
-<div id="modal-editar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:600px;margin:20px">
-    <h3 style="margin-bottom:20px;font-size:16px">Editar producto</h3>
-    <input type="hidden" id="edit-id">
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
-      <div><label>Modelo</label><input id="edit-modelo"></div>
+function abrirEditar(id) {
+  const p = allProductos.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('edit-id').value = p.id;
+  document.getElementById('edit-modelo').value = p.modelo || '';
+  document.getElementById('edit-marca').value = p.marca || '';
+  document.getElementById('edit-color').value = p.color || '';
+  document.getElementById('edit-talle').value = p.talle || '';
+  document.getElementById('edit-costo').value = p.costo || 0;
+  document.getElementById('edit-precio').value = p.precio || 0;
+  document.getElementById('edit-stock').value = p.stock || 0;
+  document.getElementById('modal-editar').style.display = 'flex';
+}
+
+function cerrarEditar() {
+  document.getElementById('modal-editar').style.display = 'none';
+}
+
+async function guardarEditar() {
+  const id = document.getElementById('edit-id').value;
+  const datos = {
+    modelo: document.getElementById('edit-modelo').value.trim(),
+    marca: document.getElementById('edit-marca').value.trim(),
+    color: document.getElementById('edit-color').value.trim(),
+    talle: document.getElementById('edit-talle').value.trim(),
+    costo: +document.getElementById('edit-costo').value || 0,
+    precio: +document.getElementById('edit-precio').value || 0,
+    stock: +document.getElementById('edit-stock').value || 0,
+  };
+  await sb(`productos?id=eq.${id}`, { method: 'PATCH', body: datos, prefer: 'return=minimal' });
+  toast('Producto actualizado ✓');
+  cerrarEditar();
+  cargarInventario();
+}
+
+</script>
       <div><label>Marca</label><input id="edit-marca"></div>
       <div><label>Color</label><input id="edit-color"></div>
     </div>
@@ -1194,5 +1237,7 @@ window.addEventListener('load', async () => {
   </div>
 </div>
 
+
+<!-- MODAL EDITAR PRODUCTO -->
 </body>
 </html>
