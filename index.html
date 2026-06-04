@@ -315,6 +315,9 @@ input:focus, select:focus { border-color: var(--green); }
             <button class="filter-tab" onclick="setVentaFiltro('anio',this)">Este año</button>
             <button class="filter-tab" onclick="setVentaFiltro('todo',this)">Todo</button>
           </div>
+          <select id="ventas-mes-select" onchange="setVentaFiltroMes(this.value)" style="width:150px">
+            <option value="">— Mes específico —</option>
+          </select>
           <div class="search-input"><input id="ventas-search" placeholder="Buscar..." oninput="aplicarFiltroVentas()" style="width:180px"></div>
         </div>
       </div>
@@ -458,7 +461,7 @@ const today = () => new Date().toISOString().split('T')[0];
 const thisMonth = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; };
 
 let allProductos = [], allVentas = [], allGastos = [];
-let invFiltrado = [], ventaFiltro = 'hoy', dashFiltro = 'mes';
+let invFiltrado = [], ventaFiltro = 'hoy', ventaMesEspecifico = '', dashFiltro = 'mes';
 let chartFact = null, chartGan = null;
 
 function toast(msg, type='success') {
@@ -656,19 +659,36 @@ async function cargarVentas() {
   document.getElementById('venta-fecha').value = today();
   if (!allProductos.length) allProductos = await sb('productos?select=*&order=modelo.asc') || [];
   const data = await sb('ventas?select=*&order=fecha.desc,registrado_en.desc');
-  allVentas = data || []; aplicarFiltroVentas();
+  allVentas = data || [];
+  // Populate month dropdown
+  const meses = [...new Set(allVentas.map(v => v.fecha ? v.fecha.substring(0,7) : null).filter(Boolean))].sort().reverse();
+  const sel = document.getElementById('ventas-mes-select');
+  sel.innerHTML = '<option value="">— Mes específico —</option>' + meses.map(m => `<option value="${m}">${m}</option>`).join('');
+  aplicarFiltroVentas();
 }
 
 function setVentaFiltro(f, btn) {
   ventaFiltro = f;
+  ventaMesEspecifico = '';
+  document.getElementById('ventas-mes-select').value = '';
   document.querySelectorAll('#page-ventas .filter-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active'); aplicarFiltroVentas();
+}
+
+function setVentaFiltroMes(mes) {
+  ventaMesEspecifico = mes;
+  if (mes) {
+    ventaFiltro = '';
+    document.querySelectorAll('#page-ventas .filter-tab').forEach(b => b.classList.remove('active'));
+  }
+  aplicarFiltroVentas();
 }
 
 function aplicarFiltroVentas() {
   const hoy = today(), mes = thisMonth(), anio = String(new Date().getFullYear());
   let f = [...allVentas];
-  if (ventaFiltro === 'hoy') f = f.filter(v => v.fecha === hoy);
+  if (ventaMesEspecifico) f = f.filter(v => v.fecha && v.fecha.startsWith(ventaMesEspecifico));
+  else if (ventaFiltro === 'hoy') f = f.filter(v => v.fecha === hoy);
   else if (ventaFiltro === 'semana') { const h = new Date(); h.setDate(h.getDate()-7); f = f.filter(v => v.fecha && new Date(v.fecha) >= h); }
   else if (ventaFiltro === 'mes') f = f.filter(v => v.fecha && v.fecha.startsWith(mes));
   else if (ventaFiltro === 'anio') f = f.filter(v => v.fecha && v.fecha.startsWith(anio));
