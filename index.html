@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <style>
 :root {
   --bg: #0f0f0f;
@@ -167,6 +168,10 @@ input:focus, select:focus { border-color: var(--green); }
 
 /* AUTOCOMPLETE */
 #autocomplete-dropdown { display: none; position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; z-index: 999; max-height: 220px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.prod-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer; margin: 3px; transition: all .15s; color: var(--text2); }
+.prod-chip:hover { border-color: var(--green); color: var(--green); }
+.etiq-item { padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-bottom: 4px; border: 1px solid var(--border); transition: all .15s; }
+.etiq-item:hover { border-color: var(--green); background: var(--green-bg); }
 </style>
 </head>
 <body>
@@ -217,6 +222,12 @@ input:focus, select:focus { border-color: var(--green); }
     </div>
     <div class="nav-item" onclick="goTo('analisis',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Análisis
+    </div>
+    <div class="nav-item" onclick="goTo('caja',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Caja
+    </div>
+    <div class="nav-item" onclick="goTo('scanner',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h2v10H7zm4 0h2v10h-2zm4 0h2v10h-2z"/></svg>Escáner <span style="font-size:10px;background:var(--yellow-bg);color:var(--yellow);padding:2px 6px;border-radius:10px;margin-left:4px">DEMO</span>
     </div>
   </div>
   <div class="sidebar-footer">
@@ -407,6 +418,129 @@ input:focus, select:focus { border-color: var(--green); }
     </div>
   </div>
 
+  <!-- CAJA -->
+  <div id="page-caja" class="page">
+    <div class="page-title">Caja</div>
+    <div class="page-sub">Resumen diario de ventas y medios de pago</div>
+
+    <!-- Selector de fecha -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="setCajaFecha('hoy',this)">Hoy</button>
+        <button class="filter-tab" onclick="setCajaFecha('ayer',this)">Ayer</button>
+      </div>
+      <input type="date" id="caja-fecha-input" onchange="setCajaFechaManual(this.value)" style="width:180px">
+    </div>
+
+    <!-- Cards del día -->
+    <div class="cards" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
+      <div class="card"><div class="card-label">Total del día</div><div class="card-value green" id="caja-total">—</div><div class="card-sub" id="caja-fecha-label">—</div></div>
+      <div class="card"><div class="card-label">Cantidad de ventas</div><div class="card-value blue" id="caja-cantidad">—</div><div class="card-sub">transacciones</div></div>
+      <div class="card"><div class="card-label">Ganancia del día</div><div class="card-value" id="caja-ganancia">—</div><div class="card-sub">ventas − costos</div></div>
+      <div class="card"><div class="card-label">Ticket promedio</div><div class="card-value yellow" id="caja-ticket">—</div><div class="card-sub">por venta</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+      <!-- Desglose por medio de pago -->
+      <div class="table-wrap">
+        <div class="table-header"><h3>Desglose por medio de pago</h3></div>
+        <table>
+          <thead><tr><th>Medio de pago</th><th>Ventas</th><th>Total</th><th>%</th></tr></thead>
+          <tbody id="caja-pagos"></tbody>
+        </table>
+      </div>
+
+      <!-- Gráfico comparación días -->
+      <div class="chart-box" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text2)">Comparación últimos 14 días</h3>
+        <canvas id="chart-caja"></canvas>
+      </div>
+    </div>
+
+    <!-- Historial por día -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Historial acumulado por día</h3>
+        <div class="right">
+          <select id="caja-mes-filter" onchange="renderCajaHistorial()" style="width:180px">
+            <option value="">Todos los meses</option>
+          </select>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Ventas</th><th>Total</th><th>Ganancia</th><th>Efectivo</th><th>Transferencia</th><th>Débito</th><th>Crédito</th><th>Mercado Pago</th></tr></thead>
+        <tbody id="caja-historial"></tbody>
+      </table>
+      <div id="caja-historial-totales" style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:24px;font-size:13px;color:var(--text2)"></div>
+    </div>
+
+    <!-- Detalle ventas del día -->
+    <div class="table-wrap">
+      <div class="table-header"><h3 id="caja-detalle-titulo">Ventas del día</h3></div>
+      <table>
+        <thead><tr><th>Producto</th><th>Talle</th><th>Color</th><th>Precio</th><th>Ganancia</th><th>Vendedor</th><th>Pago</th></tr></thead>
+        <tbody id="caja-detalle"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SCANNER -->
+  <div id="page-scanner" class="page">
+    <div class="page-title">Escáner de Precios</div>
+    <div class="page-sub">Escaneá el código de barras con el lector para ver el precio — solo visible para el empleado</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <!-- ESCANEAR -->
+      <div>
+        <div class="form-box">
+          <h3>🔍 Escanear producto</h3>
+          <div style="margin-bottom:12px;font-size:13px;color:var(--text3)">Conectá el lector USB y escaneá, o ingresá el código manualmente</div>
+          <label>Código de barras</label>
+          <input id="scan-input" placeholder="Esperando escaneo..." style="font-family:var(--mono);font-size:16px;border-color:var(--green);background:var(--green-bg)" autofocus onkeydown="if(event.key==='Enter')procesarScan()">
+          <div style="margin-top:8px"><button class="btn btn-primary" onclick="procesarScan()" style="width:100%">Buscar precio</button></div>
+        </div>
+
+        <div id="scan-resultado" style="display:none">
+          <div class="form-box" id="scan-resultado-box">
+            <div style="text-align:center;padding:12px 0">
+              <div id="scan-nombre" style="font-size:20px;font-weight:700;margin-bottom:4px"></div>
+              <div id="scan-detalle" style="font-size:13px;color:var(--text3);margin-bottom:16px"></div>
+              <div id="scan-precio" style="font-size:48px;font-weight:700;font-family:var(--mono);color:var(--green)"></div>
+              <div id="scan-stock" style="font-size:13px;color:var(--text2);margin-top:8px"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DEMO chips -->
+        <div class="form-box">
+          <h3 style="margin-bottom:4px">Productos demo</h3>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Clickeá para simular un escaneo mientras no tenés el lector</div>
+          <div id="scan-chips"></div>
+        </div>
+      </div>
+
+      <!-- ETIQUETAS -->
+      <div>
+        <div class="form-box">
+          <h3>🏷️ Generar etiqueta</h3>
+          <div style="margin-bottom:12px;font-size:13px;color:var(--text3)">Buscá un producto del inventario para generar su etiqueta</div>
+          <label>Buscar producto</label>
+          <input id="etiq-search" placeholder="Modelo, marca, talle..." oninput="buscarParaEtiqueta()" style="margin-bottom:8px">
+          <div id="etiq-lista" style="max-height:200px;overflow-y:auto;margin-bottom:12px"></div>
+          <div id="etiq-preview" style="display:none">
+            <div style="background:#fff;color:#000;border-radius:8px;padding:14px;text-align:center;max-width:220px;margin:0 auto 12px">
+              <div id="etiq-marca-r" style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#666;font-family:var(--font)"></div>
+              <div id="etiq-modelo-r" style="font-size:14px;font-weight:700;color:#000;font-family:var(--font);margin:3px 0"></div>
+              <div id="etiq-detalle-r" style="font-size:11px;color:#555;font-family:var(--font);margin-bottom:6px"></div>
+              <svg id="etiq-barcode" style="max-width:100%"></svg>
+            </div>
+            <button class="btn btn-primary" onclick="imprimirEtiqueta()" style="width:100%">🖨️ Imprimir etiqueta</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <!-- MODAL EDITAR -->
@@ -510,6 +644,8 @@ function goTo(page, el) {
   if (page === 'dashboard') cargarDashboard();
   if (page === 'reposicion') cargarReposicion();
   if (page === 'analisis') cargarAnalisis();
+  if (page === 'caja') cargarCaja();
+  if (page === 'scanner') cargarScanner();
 }
 
 function getProdTalle(id) { const p = allProductos.find(x => x.id === id); return p ? p.talle||'' : ''; }
@@ -901,6 +1037,299 @@ function exportarPDF() {
   const rows = Object.values(map).sort((a,b)=>b.total-a.total);
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;padding:32px;color:#111}h1{font-size:20px;margin-bottom:4px}.sub{color:#666;font-size:13px;margin-bottom:24px}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#f5f5f5;padding:8px 12px;text-align:left;border-bottom:2px solid #ddd;font-size:11px;text-transform:uppercase;letter-spacing:1px}td{padding:7px 12px;border-bottom:1px solid #eee}.right{text-align:right}.total-row{font-weight:700;background:#f9f9f9}.green{color:#16a34a}.red{color:#dc2626}</style></head><body><h1>Santos Brother — Concentración de Ventas</h1><div class="sub">Mes: ${mes} · Total: ${fmt(totalMes)} · Ganancia: ${fmt(ganTotalMes)}</div><table><thead><tr><th>Modelo</th><th>Talle</th><th>Color</th><th class="right">Unidades</th><th class="right">Total $</th><th class="right">Ganancia $</th><th class="right">%</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.nombre}</td><td>${r.talle}</td><td>${r.color}</td><td class="right">${r.units}</td><td class="right green">${fmt(r.total)}</td><td class="right ${r.ganancia>=0?'green':'red'}">${fmt(r.ganancia)}</td><td class="right">${totalMes>0?Math.round(r.total/totalMes*100):0}%</td></tr>`).join('')}<tr class="total-row"><td colspan="3">TOTAL</td><td class="right">${rows.reduce((s,r)=>s+r.units,0)}</td><td class="right green">${fmt(totalMes)}</td><td class="right ${ganTotalMes>=0?'green':'red'}">${fmt(ganTotalMes)}</td><td class="right">100%</td></tr></tbody></table></body></html>`;
   const w = window.open('','_blank'); w.document.write(html); w.document.close(); setTimeout(()=>w.print(),500);
+}
+
+
+
+// CAJA
+let cajaFechaActual = '';
+let chartCaja = null;
+
+async function cargarCaja() {
+  cajaFechaActual = today();
+  document.getElementById('caja-fecha-input').value = cajaFechaActual;
+  if (!allVentas.length) allVentas = await sb('ventas?select=*&order=fecha.desc') || [];
+  if (!allProductos.length) allProductos = await sb('productos?select=*') || [];
+  renderCajaDia();
+  renderCajaHistorial();
+  renderCajaGrafico();
+}
+
+function setCajaFecha(tipo, btn) {
+  document.querySelectorAll('#page-caja .filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tipo === 'hoy') cajaFechaActual = today();
+  else if (tipo === 'ayer') {
+    const ayer = new Date(); ayer.setDate(ayer.getDate()-1);
+    cajaFechaActual = ayer.toISOString().split('T')[0];
+  }
+  document.getElementById('caja-fecha-input').value = cajaFechaActual;
+  renderCajaDia();
+}
+
+function setCajaFechaManual(fecha) {
+  cajaFechaActual = fecha;
+  document.querySelectorAll('#page-caja .filter-tab').forEach(b => b.classList.remove('active'));
+  renderCajaDia();
+}
+
+function renderCajaDia() {
+  const ventasDia = allVentas.filter(v => v.fecha === cajaFechaActual);
+  const total = ventasDia.reduce((s,v) => s+(v.total||0), 0);
+  const ganancia = ventasDia.reduce((s,v) => s+(v.total||0)-(v.costo||0)*(v.qty||1), 0);
+  const ticket = ventasDia.length > 0 ? total / ventasDia.length : 0;
+
+  document.getElementById('caja-total').textContent = fmt(total);
+  document.getElementById('caja-cantidad').textContent = ventasDia.length;
+  document.getElementById('caja-fecha-label').textContent = cajaFechaActual;
+  const ganEl = document.getElementById('caja-ganancia');
+  ganEl.textContent = fmt(ganancia);
+  ganEl.className = 'card-value ' + (ganancia >= 0 ? 'green' : 'red');
+  document.getElementById('caja-ticket').textContent = fmt(ticket);
+  document.getElementById('caja-detalle-titulo').textContent = 'Ventas del ' + cajaFechaActual;
+
+  // Desglose por pago
+  const pagos = ['Efectivo','Transferencia','Débito','Crédito','Mercado Pago'];
+  const pagoMap = {};
+  pagos.forEach(p => pagoMap[p] = { count: 0, total: 0 });
+  ventasDia.forEach(v => {
+    const p = v.pago || 'Efectivo';
+    if (!pagoMap[p]) pagoMap[p] = { count: 0, total: 0 };
+    pagoMap[p].count++; pagoMap[p].total += v.total || 0;
+  });
+  document.getElementById('caja-pagos').innerHTML = Object.entries(pagoMap)
+    .filter(([,d]) => d.count > 0)
+    .sort((a,b) => b[1].total - a[1].total)
+    .map(([pago, d]) => {
+      const pct = total > 0 ? Math.round(d.total/total*100) : 0;
+      return `<tr>
+        <td><span class="badge badge-gray">${pago}</span></td>
+        <td class="mono">${d.count}</td>
+        <td class="mono green">${fmt(d.total)}</td>
+        <td class="mono">${pct}%</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="4" class="loading">Sin ventas este día</td></tr>';
+
+  // Detalle ventas
+  document.getElementById('caja-detalle').innerHTML = ventasDia.length
+    ? ventasDia.map(v => {
+        const gan = (v.total||0) - (v.costo||0)*(v.qty||1);
+        return `<tr>
+          <td><strong>${v.producto_nombre||''}</strong></td>
+          <td class="mono">${getProdTalle(v.producto_id)}</td>
+          <td>${getProdColor(v.producto_id)}</td>
+          <td class="mono green">${fmt(v.precio)}</td>
+          <td class="mono ${gan>=0?'green':'red'}">${fmt(gan)}</td>
+          <td>${v.vendedor||''}</td>
+          <td><span class="badge badge-gray">${v.pago||''}</span></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="7" class="loading">Sin ventas este día</td></tr>';
+}
+
+function renderCajaHistorial() {
+  const mesFiltro = document.getElementById('caja-mes-filter').value;
+  // Agrupar ventas por día
+  const diasMap = {};
+  allVentas.forEach(v => {
+    if (!v.fecha) return;
+    if (mesFiltro && !v.fecha.startsWith(mesFiltro)) return;
+    const d = v.fecha;
+    if (!diasMap[d]) diasMap[d] = { ventas: 0, total: 0, ganancia: 0, pagos: { Efectivo:0, Transferencia:0, Débito:0, Crédito:0, 'Mercado Pago':0 } };
+    diasMap[d].ventas++;
+    diasMap[d].total += v.total || 0;
+    diasMap[d].ganancia += (v.total||0) - (v.costo||0)*(v.qty||1);
+    const p = v.pago || 'Efectivo';
+    if (diasMap[d].pagos[p] !== undefined) diasMap[d].pagos[p] += v.total||0;
+  });
+
+  // Populate month filter
+  const meses = [...new Set(allVentas.map(v => v.fecha ? v.fecha.substring(0,7) : null).filter(Boolean))].sort().reverse();
+  const sel = document.getElementById('caja-mes-filter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Todos los meses</option>' + meses.map(m => `<option value="${m}" ${m===current?'selected':''}>${m}</option>`).join('');
+
+  const dias = Object.entries(diasMap).sort((a,b) => b[0].localeCompare(a[0]));
+  document.getElementById('caja-historial').innerHTML = dias.length
+    ? dias.map(([fecha, d]) => `<tr>
+        <td><strong>${fecha}</strong></td>
+        <td class="mono">${d.ventas}</td>
+        <td class="mono green">${fmt(d.total)}</td>
+        <td class="mono ${d.ganancia>=0?'green':'red'}">${fmt(d.ganancia)}</td>
+        <td class="mono">${fmt(d.pagos['Efectivo'])}</td>
+        <td class="mono">${fmt(d.pagos['Transferencia'])}</td>
+        <td class="mono">${fmt(d.pagos['Débito'])}</td>
+        <td class="mono">${fmt(d.pagos['Crédito'])}</td>
+        <td class="mono">${fmt(d.pagos['Mercado Pago'])}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="9" class="loading">Sin datos</td></tr>';
+
+  // Totales
+  const tTotal = dias.reduce((s,[,d])=>s+d.total,0);
+  const tGan = dias.reduce((s,[,d])=>s+d.ganancia,0);
+  const tVentas = dias.reduce((s,[,d])=>s+d.ventas,0);
+  document.getElementById('caja-historial-totales').innerHTML = `
+    <span>Días: <strong style="font-family:var(--mono)">${dias.length}</strong></span>
+    <span>Ventas: <strong style="font-family:var(--mono)">${tVentas}</strong></span>
+    <span>Total: <strong style="color:var(--green);font-family:var(--mono)">${fmt(tTotal)}</strong></span>
+    <span>Ganancia: <strong style="color:${tGan>=0?'var(--green)':'var(--red)'};font-family:var(--mono)">${fmt(tGan)}</strong></span>`;
+}
+
+function renderCajaGrafico() {
+  // Últimos 14 días
+  const dias14 = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    dias14.push(d.toISOString().split('T')[0]);
+  }
+  const totalesDias = dias14.map(fecha => {
+    const v = allVentas.filter(v => v.fecha === fecha);
+    return v.reduce((s,v) => s+(v.total||0), 0);
+  });
+  const labels = dias14.map(d => d.substring(5));
+  if (chartCaja) chartCaja.destroy();
+  chartCaja = new Chart(document.getElementById('chart-caja'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: totalesDias,
+        backgroundColor: totalesDias.map(v => v > 0 ? 'rgba(34,197,94,.7)' : 'rgba(82,82,91,.3)'),
+        borderColor: totalesDias.map(v => v > 0 ? '#22c55e' : '#52525b'),
+        borderWidth: 1, borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#71717a', font: { size: 10 } }, grid: { color: '#2a2a2a' } },
+        y: { ticks: { color: '#71717a', callback: v => '$'+(v/1000).toFixed(0)+'k' }, grid: { color: '#2a2a2a' } }
+      }
+    }
+  });
+}
+
+// SCANNER
+let scannerProductos = [];
+
+async function cargarScanner() {
+  if (!allProductos.length) allProductos = await sb('productos?select=*') || [];
+  // Generar productos demo con codigos
+  scannerProductos = allProductos.slice(0, 8).map((p, i) => ({
+    ...p,
+    codigo: '789000000' + String(i+1).padStart(4,'0')
+  }));
+  // Render chips demo
+  document.getElementById('scan-chips').innerHTML = scannerProductos.map(p =>
+    `<span class="prod-chip" onclick="simularScan('${p.codigo}')">${p.modelo} T${p.talle} ${p.color||''}</span>`
+  ).join('');
+  document.getElementById('scan-input').focus();
+}
+
+function simularScan(codigo) {
+  document.getElementById('scan-input').value = codigo;
+  procesarScan();
+}
+
+let scanTimer = null;
+document.addEventListener('input', e => {
+  if (e.target.id === 'scan-input') {
+    clearTimeout(scanTimer);
+    scanTimer = setTimeout(() => {
+      if (document.getElementById('scan-input').value.length >= 8) procesarScan();
+    }, 200);
+  }
+});
+
+function procesarScan() {
+  const codigo = document.getElementById('scan-input').value.trim();
+  if (!codigo) return;
+  const prod = scannerProductos.find(p => p.codigo === codigo);
+  const resEl = document.getElementById('scan-resultado');
+  const boxEl = document.getElementById('scan-resultado-box');
+  resEl.style.display = 'block';
+  if (prod) {
+    boxEl.style.borderColor = 'var(--green)';
+    document.getElementById('scan-nombre').textContent = prod.modelo;
+    document.getElementById('scan-detalle').textContent = prod.marca + ' · T' + prod.talle + ' · ' + (prod.color||'');
+    document.getElementById('scan-precio').textContent = fmt(prod.precio);
+    document.getElementById('scan-stock').textContent = 'Stock: ' + (prod.stock||0) + ' unidades';
+  } else {
+    boxEl.style.borderColor = 'var(--red)';
+    document.getElementById('scan-nombre').textContent = 'Producto no encontrado';
+    document.getElementById('scan-detalle').textContent = 'Código: ' + codigo;
+    document.getElementById('scan-precio').textContent = '—';
+    document.getElementById('scan-stock').textContent = '';
+  }
+  setTimeout(() => document.getElementById('scan-input').value = '', 1000);
+}
+
+// ETIQUETAS
+function buscarParaEtiqueta() {
+  const q = document.getElementById('etiq-search').value;
+  if (q.length < 2) { document.getElementById('etiq-lista').innerHTML = ''; return; }
+  const matches = allProductos.filter(p => matchTerminos(p, q)).slice(0, 8);
+  document.getElementById('etiq-lista').innerHTML = matches.map(p =>
+    `<div class="etiq-item" onclick="seleccionarEtiqueta('${p.id}')">
+      <strong>${p.modelo}</strong> — T${p.talle} ${p.color||''}
+      <span style="float:right;color:var(--text3);font-size:12px">${p.marca||''}</span>
+    </div>`
+  ).join('');
+}
+
+function seleccionarEtiqueta(id) {
+  const p = allProductos.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('etiq-search').value = p.modelo + ' T' + p.talle;
+  document.getElementById('etiq-lista').innerHTML = '';
+  document.getElementById('etiq-marca-r').textContent = p.marca || '';
+  document.getElementById('etiq-modelo-r').textContent = p.modelo || '';
+  document.getElementById('etiq-detalle-r').textContent = 'T' + (p.talle||'') + ' · ' + (p.color||'');
+  const codigo = '789' + p.id.replace(/[^0-9]/g,'').slice(0,10).padEnd(10,'0');
+  JsBarcode('#etiq-barcode', codigo, {
+    format: 'CODE128', width: 1.5, height: 40,
+    displayValue: true, fontSize: 10, margin: 4,
+    lineColor: '#000', background: '#fff'
+  });
+  // Agregar a scannerProductos para poder escanear
+  if (!scannerProductos.find(x => x.id === id)) {
+    scannerProductos.push({ ...p, codigo });
+    document.getElementById('scan-chips').innerHTML += `<span class="prod-chip" onclick="simularScan('${codigo}')" style="border-color:var(--green);color:var(--green)">★ ${p.modelo} T${p.talle}</span>`;
+  }
+  document.getElementById('etiq-preview').style.display = 'block';
+}
+
+function imprimirEtiqueta() {
+  const marca = document.getElementById('etiq-marca-r').textContent;
+  const modelo = document.getElementById('etiq-modelo-r').textContent;
+  const detalle = document.getElementById('etiq-detalle-r').textContent;
+  const barcodeSvg = document.getElementById('etiq-barcode').outerHTML;
+
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    @page { size: 58mm 38mm; margin: 0 !important; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { margin: 0 !important; padding: 0 !important; }
+    body { width: 58mm; height: 38mm; overflow: hidden; font-family: Arial, sans-serif; background: #fff; margin: 0 !important; padding: 0 !important; }
+    .etiqueta { width: 58mm; height: 38mm; text-align: center; padding: 1mm 2mm 1mm; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; }
+    .marca { font-size: 6.5pt; text-transform: uppercase; letter-spacing: 1px; color: #666; line-height: 1.2; }
+    .modelo { font-size: 10pt; font-weight: 700; color: #000; margin: 0.5mm 0; line-height: 1.2; }
+    .detalle { font-size: 7.5pt; color: #444; margin-bottom: 1mm; line-height: 1.2; }
+    svg { width: 52mm !important; height: 18mm !important; display: block; margin: 0 auto; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  </style>
+  </head><body>
+  <div class="etiqueta">
+    <div class="marca">${marca}</div>
+    <div class="modelo">${modelo}</div>
+    <div class="detalle">${detalle}</div>
+    ${barcodeSvg}
+  </div>
+  </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
 }
 
 // INIT
