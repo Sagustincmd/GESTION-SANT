@@ -172,6 +172,14 @@ input:focus, select:focus { border-color: var(--green); }
 .prod-chip:hover { border-color: var(--green); color: var(--green); }
 .etiq-item { padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-bottom: 4px; border: 1px solid var(--border); transition: all .15s; }
 .etiq-item:hover { border-color: var(--green); background: var(--green-bg); }
+.inv-talle-card { background: var(--surface2); border: 2px solid var(--border); border-radius: 8px; padding: 8px 4px; cursor: pointer; transition: all .15s; text-align: center; user-select: none; }
+.inv-talle-card:hover { border-color: var(--green); }
+.inv-talle-card.selected { border-color: var(--green); background: var(--green-bg); }
+.inv-talle-card .t-num { font-size: 14px; font-weight: 700; font-family: var(--mono); margin-bottom: 4px; }
+.inv-talle-card .t-qty { display: none; }
+.inv-talle-card.selected .t-qty { display: block; }
+.inv-talle-card input[type=number] { width: 100%; text-align: center; padding: 3px; font-size: 12px; font-family: var(--mono); background: var(--surface); border: 1px solid var(--border); border-radius: 4px; color: var(--text); }
+.inv-talle-card input[type=number]:focus { border-color: var(--green); outline: none; }
 </style>
 </head>
 <body>
@@ -265,17 +273,41 @@ input:focus, select:focus { border-color: var(--green); }
     <div class="page-title">Inventario</div>
     <div class="page-sub">Cargá y administrá tus productos</div>
     <div class="form-box">
-      <h3>Agregar producto</h3>
-      <div class="form-grid cols7">
-        <div><label>Modelo / Nombre</label><input id="inv-modelo" placeholder="Adidas Samba"></div>
-        <div><label>Marca</label><input id="inv-marca" placeholder="Adidas"></div>
-        <div><label>Color</label><input id="inv-color" placeholder="Negro / Blanco"></div>
-        <div><label>Talle</label><input id="inv-talle" placeholder="42"></div>
+      <h3>Agregar mercadería</h3>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+        <div><label>Modelo / Nombre</label><input id="inv-modelo" placeholder="DUNK LOW"></div>
+        <div><label>Marca</label><input id="inv-marca" placeholder="NIKE"></div>
+        <div><label>Color</label><input id="inv-color" placeholder="OLIVA"></div>
         <div><label>Costo ($)</label><input id="inv-costo" type="number" value="0"></div>
         <div><label>Precio ($)</label><input id="inv-precio" type="number" value="0"></div>
-        <div><label>Stock</label><input id="inv-stock" type="number" value="0"></div>
+        <div><label>Cant. por defecto</label><input id="inv-qty-default" type="number" value="1" min="1" oninput="aplicarInvQtyDefault()"></div>
       </div>
-      <div style="margin-top:12px"><button class="btn btn-primary" onclick="guardarProducto()">Guardar producto</button></div>
+
+      <div style="margin-bottom:12px">
+        <label style="margin-bottom:8px">Talles que llegaron — clickeá para seleccionar</label>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="invSelRango(34,40)">34 → 40</button>
+          <button class="btn btn-secondary btn-sm" onclick="invSelRango(36,42)">36 → 42</button>
+          <button class="btn btn-secondary btn-sm" onclick="invSelRango(38,44)">38 → 44</button>
+          <button class="btn btn-secondary btn-sm" onclick="invSelRango(34,45)">Todos</button>
+          <button class="btn btn-secondary btn-sm" onclick="invDeselTodos()">Limpiar</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px" id="inv-talles-grid"></div>
+      </div>
+
+      <div id="inv-resumen" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text2)">Resumen — productos a crear</div>
+        <div id="inv-resumen-items" style="font-size:13px"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-weight:700;font-size:13px">
+          <span>Total pares</span><span id="inv-resumen-total" style="font-family:var(--mono);color:var(--green)"></span>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-secondary" onclick="invPrevisualizar()">👁 Previsualizar</button>
+        <button class="btn btn-primary" id="inv-btn-guardar" style="display:none" onclick="guardarMercaderia()">✓ Guardar todos</button>
+        <span id="inv-guardando" style="display:none;color:var(--text3);font-size:13px">Guardando...</span>
+      </div>
     </div>
     <div class="table-wrap">
       <div class="table-header">
@@ -690,6 +722,7 @@ async function cargarHome() {
 
 // INVENTARIO
 async function cargarInventario() {
+  initInvTalles();
   const data = await sb('productos?select=*&order=modelo.asc');
   allProductos = data || []; invFiltrado = [...allProductos];
   document.getElementById('inv-count').textContent = allProductos.length + ' productos';
@@ -719,8 +752,8 @@ function renderInventario() {
       <td class="mono">${p.talle||''}</td><td class="mono">${fmt(p.costo)}</td><td class="mono">${fmt(p.precio)}</td>
       <td class="mono ${margen>0?'green':'red'}">${margen}%</td>
       <td><div class="stock-edit">
-        <input type="number" id="stock-${p.id}" value="${p.stock||0}" min="0" style="width:60px;padding:4px 6px;font-size:13px">
-        <button class="btn btn-secondary btn-sm" onclick="actualizarStock('${p.id}')">✓</button>
+        <input type="number" data-id="${p.id}" class="stock-input" value="${p.stock||0}" min="0" style="width:60px;padding:4px 6px;font-size:13px">
+        <button class="btn btn-secondary btn-sm" onclick="actualizarStockBtn(this)">✓</button>
       </div></td>
       <td>${estado}</td>
       <td style="display:flex;gap:4px">
@@ -730,22 +763,116 @@ function renderInventario() {
   }).join('');
 }
 
-async function guardarProducto() {
+// CARGA MASIVA
+const INV_TALLES = [34,35,36,37,38,39,40,41,42,43,44,45];
+
+function initInvTalles() {
+  const grid = document.getElementById('inv-talles-grid');
+  if (!grid || grid.children.length > 0) return;
+  INV_TALLES.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'inv-talle-card';
+    card.dataset.talle = t;
+    card.innerHTML = `<div class="t-num">${t}</div><div class="t-qty"><input type="number" class="inv-qty-input" value="1" min="1" onclick="event.stopPropagation()"><div style="font-size:9px;color:var(--text3);margin-top:2px">pares</div></div>`;
+    card.addEventListener('click', () => { card.classList.toggle('selected'); });
+    grid.appendChild(card);
+  });
+}
+
+function invSelRango(desde, hasta) {
+  document.querySelectorAll('.inv-talle-card').forEach(c => {
+    if (+c.dataset.talle >= desde && +c.dataset.talle <= hasta) c.classList.add('selected');
+  });
+  aplicarInvQtyDefault();
+}
+
+function invDeselTodos() {
+  document.querySelectorAll('.inv-talle-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('inv-resumen').style.display = 'none';
+  document.getElementById('inv-btn-guardar').style.display = 'none';
+}
+
+function aplicarInvQtyDefault() {
+  const qty = +document.getElementById('inv-qty-default').value || 1;
+  document.querySelectorAll('.inv-talle-card.selected .inv-qty-input').forEach(inp => inp.value = qty);
+}
+
+function invGetSeleccionados() {
+  const items = [];
+  document.querySelectorAll('.inv-talle-card.selected').forEach(c => {
+    items.push({ talle: c.dataset.talle, qty: +c.querySelector('.inv-qty-input').value || 1 });
+  });
+  return items;
+}
+
+function invPrevisualizar() {
+  const items = invGetSeleccionados();
+  if (!items.length) { toast('Seleccioná al menos un talle', 'error'); return; }
+  const modelo = document.getElementById('inv-modelo').value.trim() || '—';
+  const marca = document.getElementById('inv-marca').value.trim() || '—';
+  const color = document.getElementById('inv-color').value.trim() || '—';
+  const costo = +document.getElementById('inv-costo').value || 0;
+  const precio = +document.getElementById('inv-precio').value || 0;
+  const margen = precio > 0 ? Math.round((precio-costo)/precio*100) : 0;
+  const totalQty = items.reduce((s,i) => s+i.qty, 0);
+  document.getElementById('inv-resumen-items').innerHTML = items.map(i =>
+    `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
+      <span style="color:var(--text2)">${modelo} T${i.talle} ${color} — ${marca}</span>
+      <span style="display:flex;gap:12px"><span style="color:var(--text3)">$${costo.toLocaleString('es-AR')} → $${precio.toLocaleString('es-AR')} (${margen}%)</span><strong style="color:var(--green);font-family:var(--mono)">${i.qty} par${i.qty>1?'es':''}</strong></span>
+    </div>`).join('');
+  document.getElementById('inv-resumen-total').textContent = totalQty + ' pares totales';
+  document.getElementById('inv-resumen').style.display = 'block';
+  document.getElementById('inv-btn-guardar').style.display = 'flex';
+}
+
+async function guardarMercaderia() {
+  const items = invGetSeleccionados();
+  if (!items.length) return;
   const modelo = document.getElementById('inv-modelo').value.trim();
   if (!modelo) { toast('Ingresá el nombre del modelo', 'error'); return; }
-  const prod = { id: crypto.randomUUID(), modelo, marca: document.getElementById('inv-marca').value.trim(), color: document.getElementById('inv-color').value.trim(), talle: document.getElementById('inv-talle').value.trim(), costo: +document.getElementById('inv-costo').value||0, precio: +document.getElementById('inv-precio').value||0, stock: +document.getElementById('inv-stock').value||0, creado_en: new Date().toISOString() };
-  await sb('productos', { method: 'POST', body: prod, prefer: 'return=minimal' });
-  toast('Producto guardado ✓');
-  ['inv-modelo','inv-marca','inv-color','inv-talle'].forEach(id => document.getElementById(id).value = '');
-  ['inv-costo','inv-precio','inv-stock'].forEach(id => document.getElementById(id).value = '0');
+  const marca = document.getElementById('inv-marca').value.trim();
+  const color = document.getElementById('inv-color').value.trim();
+  const costo = +document.getElementById('inv-costo').value || 0;
+  const precio = +document.getElementById('inv-precio').value || 0;
+
+  document.getElementById('inv-btn-guardar').style.display = 'none';
+  document.getElementById('inv-guardando').style.display = 'block';
+
+  let creados = 0;
+  for (const item of items) {
+    const prod = {
+      id: crypto.randomUUID(), modelo, marca, color,
+      talle: item.talle, costo, precio, stock: item.qty,
+      creado_en: new Date().toISOString()
+    };
+    try {
+      await sb('productos', { method: 'POST', body: prod, prefer: 'return=minimal' });
+      creados++;
+    } catch(e) { console.error(e); }
+  }
+
+  document.getElementById('inv-guardando').style.display = 'none';
+  toast(`✓ ${creados} productos guardados correctamente`);
+
+  // Reset form
+  ['inv-modelo','inv-marca','inv-color'].forEach(id => document.getElementById(id).value = '');
+  ['inv-costo','inv-precio'].forEach(id => document.getElementById(id).value = '0');
+  document.getElementById('inv-qty-default').value = '1';
+  invDeselTodos();
   cargarInventario();
 }
 
-async function actualizarStock(id) {
-  const val = +document.getElementById('stock-' + id).value || 0;
+async function actualizarStock(id, val) {
   await sb('productos?id=eq.' + id, { method: 'PATCH', body: { stock: val }, prefer: 'return=minimal' });
   const p = allProductos.find(x => x.id === id); if (p) p.stock = val;
   toast('Stock actualizado ✓'); renderInventario();
+}
+
+async function actualizarStockBtn(btn) {
+  const input = btn.previousElementSibling;
+  const id = input.dataset.id;
+  const val = +input.value || 0;
+  await actualizarStock(id, val);
 }
 
 async function eliminarProducto(id) {
