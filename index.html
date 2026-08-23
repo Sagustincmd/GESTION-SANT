@@ -1178,8 +1178,9 @@ function renderDashboard() {
 async function cargarReposicion() {
   document.getElementById('repo-loading').style.display = 'block';
   ['repo-urgente','repo-prioridad','repo-normal'].forEach(id => document.getElementById(id).innerHTML = '');
-  if (!allProductos.length) allProductos = await sb('productos?select=*') || [];
-  if (!allVentas.length) allVentas = await sb('ventas?select=*') || [];
+  const suf = esAdmin ? '' : '&sucursal=eq.' + currentSucursal;
+  allProductos = await sb('productos?select=*' + suf) || [];
+  allVentas = await sb('ventas?select=*' + suf) || [];
   const hace90 = new Date(); hace90.setDate(hace90.getDate()-90);
   const velMap = {};
   allVentas.filter(v => v.fecha && new Date(v.fecha) >= hace90).forEach(v => { velMap[v.producto_id] = (velMap[v.producto_id]||0)+(v.qty||1); });
@@ -1203,8 +1204,9 @@ async function cargarReposicion() {
 
 // ANALISIS
 async function cargarAnalisis() {
-  if (!allProductos.length) allProductos = await sb('productos?select=*') || [];
-  if (!allVentas.length) allVentas = await sb('ventas?select=*') || [];
+  const suf = esAdmin ? '' : '&sucursal=eq.' + currentSucursal;
+  allProductos = await sb('productos?select=*' + suf) || [];
+  allVentas = await sb('ventas?select=*' + suf) || [];
   const vendidos = new Set(allVentas.map(v => v.producto_id));
   const sinMov = allProductos.filter(p => (p.stock||0) > 0 && !vendidos.has(p.id));
   document.getElementById('anal-sinmov').innerHTML = sinMov.length ? sinMov.map(p => `<tr><td><strong>${p.modelo}</strong></td><td class="mono">${p.talle}</td><td>${p.color||''}</td><td class="mono">${p.stock}</td><td><span class="badge badge-red">Nunca vendido</span></td><td class="mono red">−${fmt((p.costo||0)*(p.stock||0))}</td></tr>`).join('') : '<tr><td colspan="6" class="loading">¡Sin productos estancados! 🎉</td></tr>';
@@ -1250,8 +1252,10 @@ let chartCaja = null;
 async function cargarCaja() {
   cajaFechaActual = today();
   document.getElementById('caja-fecha-input').value = cajaFechaActual;
-  if (!allVentas.length) allVentas = await sb('ventas?select=*&order=fecha.desc') || [];
-  if (!allProductos.length) allProductos = await sb('productos?select=*') || [];
+  const ventasEndpoint = esAdmin ? 'ventas?select=*&order=fecha.desc' : 'ventas?select=*&order=fecha.desc&sucursal=eq.' + currentSucursal;
+  const productosEndpoint = esAdmin ? 'productos?select=*' : 'productos?select=*&sucursal=eq.' + currentSucursal;
+  allVentas = await sb(ventasEndpoint) || [];
+  allProductos = await sb(productosEndpoint) || [];
   renderCajaDia();
   renderCajaHistorial();
   renderCajaGrafico();
