@@ -222,10 +222,10 @@ input:focus, select:focus { border-color: var(--green); }
   </div>
   <div class="nav-section">
     <div class="nav-label">Negocio Vidriera</div>
-    <div class="nav-item" onclick="goTo('dashboard',this)">
+    <div class="nav-item admin-only" onclick="goTo('dashboard',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Dashboard
     </div>
-    <div class="nav-item" onclick="goTo('reposicion',this)">
+    <div class="nav-item admin-only" onclick="goTo('reposicion',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Reposición
     </div>
     <div class="nav-item" onclick="goTo('analisis',this)">
@@ -234,13 +234,14 @@ input:focus, select:focus { border-color: var(--green); }
     <div class="nav-item" onclick="goTo('caja',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Caja
     </div>
-    <div class="nav-item" onclick="goTo('scanner',this)">
+    <div class="nav-item admin-only" onclick="goTo('scanner',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h2v10H7zm4 0h2v10h-2zm4 0h2v10h-2z"/></svg>Escáner <span style="font-size:10px;background:var(--yellow-bg);color:var(--yellow);padding:2px 6px;border-radius:10px;margin-left:4px">DEMO</span>
     </div>
   </div>
   <div class="sidebar-footer">
     <div class="sidebar-user"><strong id="sidebar-email">—</strong>Santos Brother</div>
-    <button class="btn btn-secondary btn-sm" onclick="cerrarSesion()" style="width:100%">Cerrar sesión</button>
+    <div id="sucursal-badge" style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;margin:6px 0;"></div>
+    <button class="btn btn-secondary btn-sm" onclick="cerrarSesion()" style="width:100%;margin-top:6px">Cerrar sesión</button>
   </div>
 </nav>
 
@@ -251,6 +252,14 @@ input:focus, select:focus { border-color: var(--green); }
   <div id="page-home" class="page active">
     <div class="page-title">Home</div>
     <div class="page-sub">Resumen general del negocio</div>
+    <div id="admin-sucursal-filter" style="display:none;align-items:center;gap:10px;margin-bottom:20px">
+      <span style="font-size:13px;color:var(--text2)">Ver sucursal:</span>
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="setAdminSucursal('todas',this)">Todas</button>
+        <button class="filter-tab" onclick="setAdminSucursal('Laboulaye',this)">Laboulaye</button>
+        <button class="filter-tab" onclick="setAdminSucursal('Córdoba',this)">Córdoba</button>
+      </div>
+    </div>
     <div class="cards">
       <div class="card"><div class="card-label">Ventas Hoy</div><div class="card-value green" id="h-hoy">—</div><div class="card-sub" id="h-hoy-u">cargando...</div></div>
       <div class="card"><div class="card-label">Ventas Este Mes</div><div class="card-value green" id="h-mes">—</div><div class="card-sub" id="h-mes-u">cargando...</div></div>
@@ -609,6 +618,22 @@ const SUPABASE_URL = "https://aalgxsfqfyskvqamxtqd.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbGd4c2ZxZnlza3ZxYW14dHFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzQ5NzgsImV4cCI6MjA5NTk1MDk3OH0.BfGBbcOLgPMeO1U8tR7mUO3Vfr0AoqCURE9CjYlxud8";
 const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// SUCURSALES
+const USUARIOS_CORDOBA = ['joackoloza17@gmail.com'];
+let currentUser = null;
+let currentSucursal = 'Laboulaye'; // default
+let esAdmin = true;
+
+function getSucursalFiltro() {
+  return esAdmin ? null : currentSucursal;
+}
+
+function sbEndpointConSucursal(endpoint) {
+  if (esAdmin) return endpoint;
+  const sep = endpoint.includes('?') ? '&' : '?';
+  return endpoint + sep + 'sucursal=eq.' + currentSucursal;
+}
+
 const sb = async (endpoint, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': opts.prefer || '', ...opts.headers },
@@ -628,6 +653,7 @@ const thisMonth = () => { const d = new Date(); return `${d.getFullYear()}-${Str
 
 let allProductos = [], allVentas = [], allGastos = [];
 let invFiltrado = [], ventaFiltro = 'hoy', ventaMesEspecifico = '', dashFiltro = 'mes';
+let adminSucursalFiltro = 'todas';
 let chartFact = null, chartGan = null;
 
 function toast(msg, type='success') {
@@ -651,8 +677,32 @@ async function loginSubmit() {
 }
 
 function mostrarApp(user) {
+  currentUser = user;
+  esAdmin = !USUARIOS_CORDOBA.includes(user.email);
+  currentSucursal = USUARIOS_CORDOBA.includes(user.email) ? 'Córdoba' : 'Laboulaye';
+
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('sidebar-email').textContent = user.email;
+
+  // Mostrar badge de sucursal
+  const badge = document.getElementById('sucursal-badge');
+  if (badge) {
+    badge.textContent = currentSucursal;
+    badge.style.background = esAdmin ? 'var(--green-bg)' : 'var(--yellow-bg)';
+    badge.style.color = esAdmin ? 'var(--green)' : 'var(--yellow)';
+  }
+
+  // Ocultar páginas para Joaquín
+  if (!esAdmin) {
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+  }
+
+  // Agregar filtro de sucursal para admin
+  if (esAdmin) {
+    const filtroEl = document.getElementById('admin-sucursal-filter');
+    if (filtroEl) filtroEl.style.display = 'flex';
+  }
+
   cargarHome();
 }
 
@@ -684,11 +734,32 @@ function getProdTalle(id) { const p = allProductos.find(x => x.id === id); retur
 function getProdColor(id) { const p = allProductos.find(x => x.id === id); return p ? p.color||'' : ''; }
 
 // HOME
+function setAdminSucursal(suc, btn) {
+  adminSucursalFiltro = suc;
+  document.querySelectorAll('#admin-sucursal-filter .filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  cargarHome();
+}
+
 async function cargarHome() {
+  let ventasEndpoint = 'ventas?select=*&order=fecha.desc';
+  let productosEndpoint = 'productos?select=*';
+  let gastosEndpoint = 'gastos?select=*';
+
+  if (!esAdmin) {
+    ventasEndpoint += '&sucursal=eq.' + currentSucursal;
+    productosEndpoint += '&sucursal=eq.' + currentSucursal;
+    gastosEndpoint += '&sucursal=eq.' + currentSucursal;
+  } else if (adminSucursalFiltro !== 'todas') {
+    ventasEndpoint += '&sucursal=eq.' + adminSucursalFiltro;
+    productosEndpoint += '&sucursal=eq.' + adminSucursalFiltro;
+    gastosEndpoint += '&sucursal=eq.' + adminSucursalFiltro;
+  }
+
   const [ventas, productos, gastos] = await Promise.all([
-    sb('ventas?select=*&order=fecha.desc'),
-    sb('productos?select=*'),
-    sb('gastos?select=*')
+    sb(ventasEndpoint),
+    sb(productosEndpoint),
+    sb(gastosEndpoint)
   ]);
   allVentas = ventas || []; allProductos = productos || []; allGastos = gastos || [];
   const hoy = today(), mes = thisMonth();
@@ -723,7 +794,8 @@ async function cargarHome() {
 // INVENTARIO
 async function cargarInventario() {
   initInvTalles();
-  const data = await sb('productos?select=*&order=modelo.asc');
+  const endpoint = esAdmin ? 'productos?select=*&order=modelo.asc' : 'productos?select=*&order=modelo.asc&sucursal=eq.' + currentSucursal;
+  const data = await sb(endpoint);
   allProductos = data || []; invFiltrado = [...allProductos];
   document.getElementById('inv-count').textContent = allProductos.length + ' productos';
   renderInventario();
@@ -843,6 +915,7 @@ async function guardarMercaderia() {
     const prod = {
       id: crypto.randomUUID(), modelo, marca, color,
       talle: item.talle, costo, precio, stock: item.qty,
+      sucursal: currentSucursal,
       creado_en: new Date().toISOString()
     };
     try {
@@ -921,7 +994,8 @@ async function guardarEditar() {
 async function cargarVentas() {
   document.getElementById('venta-fecha').value = today();
   if (!allProductos.length) allProductos = await sb('productos?select=*&order=modelo.asc') || [];
-  const data = await sb('ventas?select=*&order=fecha.desc,registrado_en.desc');
+  const endpoint = esAdmin ? 'ventas?select=*&order=fecha.desc,registrado_en.desc' : 'ventas?select=*&order=fecha.desc,registrado_en.desc&sucursal=eq.' + currentSucursal;
+  const data = await sb(endpoint);
   allVentas = data || [];
   // Populate month dropdown
   const meses = [...new Set(allVentas.map(v => v.fecha ? v.fecha.substring(0,7) : null).filter(Boolean))].sort().reverse();
@@ -1005,7 +1079,7 @@ async function registrarVenta() {
   const prodId = document.getElementById('venta-prod-id').value;
   if (!prodId) { toast('Seleccioná un producto', 'error'); return; }
   const qty = +document.getElementById('venta-qty').value||1, precio = +document.getElementById('venta-precio').value||0, costo = +document.getElementById('venta-prod-costo').value||0;
-  const venta = { id: crypto.randomUUID(), producto_id: prodId, producto_nombre: document.getElementById('venta-prod-nombre').value, qty, precio, total: precio*qty, costo, fecha: document.getElementById('venta-fecha').value, vendedor: document.getElementById('venta-vendedor').value, pago: document.getElementById('venta-pago').value, nota: document.getElementById('venta-nota').value, registrado_en: new Date().toISOString() };
+  const venta = { id: crypto.randomUUID(), producto_id: prodId, producto_nombre: document.getElementById('venta-prod-nombre').value, qty, precio, total: precio*qty, costo, fecha: document.getElementById('venta-fecha').value, vendedor: document.getElementById('venta-vendedor').value, pago: document.getElementById('venta-pago').value, nota: document.getElementById('venta-nota').value, sucursal: currentSucursal, registrado_en: new Date().toISOString() };
   await sb('ventas', { method: 'POST', body: venta, prefer: 'return=minimal' });
   const prod = allProductos.find(p => p.id === prodId);
   if (prod) { const ns = Math.max(0,(prod.stock||0)-qty); await sb('productos?id=eq.'+prodId, { method: 'PATCH', body: { stock: ns }, prefer: 'return=minimal' }); prod.stock = ns; }
@@ -1028,7 +1102,8 @@ async function eliminarVenta(id) {
 
 // GASTOS
 async function cargarGastos() {
-  const data = await sb('gastos?select=*&order=mes.desc,creado_en.desc');
+  const endpoint = esAdmin ? 'gastos?select=*&order=mes.desc,creado_en.desc' : 'gastos?select=*&order=mes.desc,creado_en.desc&sucursal=eq.' + currentSucursal;
+  const data = await sb(endpoint);
   allGastos = data || [];
   const meses = [...new Set(allGastos.map(g => g.mes).filter(Boolean))].sort().reverse();
   const sel = document.getElementById('gastos-mes-filter');
@@ -1046,7 +1121,7 @@ function filtrarGastos() {
 async function guardarGasto() {
   const desc = document.getElementById('gasto-desc').value.trim();
   if (!desc) { toast('Ingresá la descripción', 'error'); return; }
-  const gasto = { id: crypto.randomUUID(), descripcion: desc, monto: +document.getElementById('gasto-monto').value||0, mes: document.getElementById('gasto-mes').value, creado_en: new Date().toISOString() };
+  const gasto = { id: crypto.randomUUID(), descripcion: desc, monto: +document.getElementById('gasto-monto').value||0, mes: document.getElementById('gasto-mes').value, sucursal: currentSucursal, creado_en: new Date().toISOString() };
   await sb('gastos', { method: 'POST', body: gasto, prefer: 'return=minimal' });
   toast('Gasto guardado ✓');
   document.getElementById('gasto-desc').value = '';
