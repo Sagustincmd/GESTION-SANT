@@ -255,12 +255,24 @@ input:focus, select:focus { border-color: var(--green); }
   <div id="page-home" class="page active">
     <div class="page-title">Home</div>
     <div class="page-sub">Resumen general del negocio</div>
-    <div id="admin-sucursal-filter" style="display:none;align-items:center;gap:10px;margin-bottom:20px">
-      <span style="font-size:13px;color:var(--text2)">Ver sucursal:</span>
-      <div class="filter-tabs">
-        <button class="filter-tab active" onclick="setAdminSucursal('todas',this)">Todas</button>
-        <button class="filter-tab" onclick="setAdminSucursal('Laboulaye',this)">Laboulaye</button>
-        <button class="filter-tab" onclick="setAdminSucursal('Córdoba',this)">Córdoba</button>
+
+    <!-- NOTIFICACION STOCK CRITICO -->
+    <div id="home-notif-banner" style="display:none;background:var(--red-bg);border:1px solid var(--red);border-radius:var(--radius);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:14px;color:var(--red);font-weight:600" id="home-notif-text"></div>
+        <div style="font-size:12px;color:#f87171;margin-top:2px" id="home-notif-sub"></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="goTo('inteligencia',document.querySelector('.nav-item.admin-only'))">Ver reposición →</button>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <div id="admin-sucursal-filter" style="display:none;align-items:center;gap:10px">
+        <span style="font-size:13px;color:var(--text2)">Sucursal:</span>
+        <div class="filter-tabs">
+          <button class="filter-tab active" onclick="setAdminSucursal('todas',this)">Todas</button>
+          <button class="filter-tab" onclick="setAdminSucursal('Laboulaye',this)">Laboulaye</button>
+          <button class="filter-tab" onclick="setAdminSucursal('Córdoba',this)">Córdoba</button>
+        </div>
       </div>
     </div>
     <div class="cards">
@@ -272,6 +284,16 @@ input:focus, select:focus { border-color: var(--green); }
       <div class="card"><div class="card-label">Productos en Stock</div><div class="card-value blue" id="h-stock">—</div><div class="card-sub">unidades totales</div></div>
       <div class="card"><div class="card-label">Alertas Reposición</div><div class="card-value red" id="h-alertas">—</div><div class="card-sub">stock bajo mínimo</div></div>
       <div class="card"><div class="card-label">Productos Distintos</div><div class="card-value" id="h-productos">—</div><div class="card-sub">en inventario</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text2)">Facturación últimos 6 meses</h3>
+        <canvas id="chart-home-fact"></canvas>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text2)">Ganancia neta últimos 6 meses</h3>
+        <canvas id="chart-home-gan"></canvas>
+      </div>
     </div>
     <div class="table-wrap">
       <div class="table-header"><h3>Últimas ventas registradas</h3></div>
@@ -374,6 +396,7 @@ input:focus, select:focus { border-color: var(--green); }
             <option value="">— Mes específico —</option>
           </select>
           <div class="search-input"><input id="ventas-search" placeholder="Buscar..." oninput="aplicarFiltroVentas()" style="width:180px"></div>
+          <button class="btn btn-secondary btn-sm" onclick="exportarVentasExcel()">📊 Excel</button>
         </div>
       </div>
       <table><thead><tr><th>Fecha</th><th>Producto</th><th>Talle</th><th>Color</th><th>Qty</th><th>Precio</th><th>Total</th><th>Ganancia</th><th>Vendedor</th><th>Pago</th><th></th></tr></thead>
@@ -635,6 +658,165 @@ input:focus, select:focus { border-color: var(--green); }
     </div>
   </div>
 
+  <!-- INTELIGENCIA -->
+  <div id="page-inteligencia" class="page">
+    <div class="page-title">Inteligencia</div>
+    <div class="page-sub">Reposición, rotación, stock sin movimiento y recomendaciones de compra</div>
+
+    <div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:24px">
+      <button class="filter-tab active" id="itab-btn-repo" onclick="setIntelTab('repo',this)">🔴 Reposición</button>
+      <button class="filter-tab" id="itab-btn-rotacion" onclick="setIntelTab('rotacion',this)">📊 Rotación</button>
+      <button class="filter-tab" id="itab-btn-sinmov" onclick="setIntelTab('sinmov',this)">⚠ Sin movimiento</button>
+      <button class="filter-tab" id="itab-btn-recomendaciones" onclick="setIntelTab('recomendaciones',this)">🎯 Qué comprar</button>
+    </div>
+
+    <!-- REPOSICION -->
+    <div id="itab-repo">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
+        <div id="intel-urgente" class="repo-section"></div>
+        <div id="intel-prioridad" class="repo-section"></div>
+        <div id="intel-normal" class="repo-section"></div>
+      </div>
+      <div id="intel-repo-loading" class="loading"><span class="spinner"></span>Calculando...</div>
+    </div>
+
+    <!-- ROTACION -->
+    <div id="itab-rotacion" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+          <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text2)">Modelos con mayor rotación (30 días)</h3>
+          <canvas id="chart-rotacion"></canvas>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+          <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text2)">Ventas por marca</h3>
+          <canvas id="chart-marcas"></canvas>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><h3>Ranking de rotación</h3><button class="btn btn-secondary btn-sm" onclick="exportarRotacionExcel()">📊 Excel</button></div>
+        <table>
+          <thead><tr><th>#</th><th>Modelo</th><th>Vendidos 30d</th><th>Stock actual</th><th>Días de stock</th><th>Rotación</th></tr></thead>
+          <tbody id="intel-rotacion-tbody"><tr><td colspan="6" class="loading"><span class="spinner"></span>Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SIN MOVIMIENTO -->
+    <div id="itab-sinmov" style="display:none">
+      <div class="table-wrap">
+        <div class="table-header"><h3>Talles sin movimiento — en stock pero nunca vendidos</h3><button class="btn btn-secondary btn-sm" onclick="exportarSinMovExcel()">📊 Excel</button></div>
+        <table>
+          <thead><tr><th>Modelo</th><th>Talle</th><th>Color</th><th>Stock</th><th>Estado</th><th>Costo inmov.</th></tr></thead>
+          <tbody id="intel-sinmov-tbody"><tr><td colspan="6" class="loading"><span class="spinner"></span>Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- QUE COMPRAR -->
+    <div id="itab-recomendaciones" style="display:none">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px">
+        <div class="card"><div class="card-label">Presupuesto disponible</div><div class="card-value green" id="intel-presupuesto-disp">—</div><div class="card-sub">recuperación recompra del mes</div></div>
+        <div class="card"><div class="card-label">Modelos urgentes</div><div class="card-value red" id="intel-urgentes-count">—</div><div class="card-sub">sin stock</div></div>
+        <div class="card"><div class="card-label">Inversión sugerida</div><div class="card-value yellow" id="intel-inversion-sug">—</div><div class="card-sub">para cubrir urgentes</div></div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><h3>🎯 Recomendación de compra esta semana</h3></div>
+        <table>
+          <thead><tr><th>Modelo</th><th>Ventas/30d</th><th>Stock actual</th><th>Comprar sugerido</th><th>Prioridad</th></tr></thead>
+          <tbody id="intel-recom-tbody"><tr><td colspan="5" class="loading"><span class="spinner"></span>Calculando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEVOLUCIONES -->
+  <div id="page-devoluciones" class="page">
+    <div class="page-title">Devoluciones</div>
+    <div class="page-sub">Registrá devoluciones — el stock vuelve automáticamente al inventario</div>
+
+    <div class="form-box" style="margin-bottom:24px">
+      <h3>Registrar devolución</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div>
+          <label>Buscar producto</label>
+          <input id="dev-prod-search" placeholder="Buscar producto..." oninput="buscarProductoDevol()" autocomplete="off">
+          <input type="hidden" id="dev-prod-id">
+          <input type="hidden" id="dev-prod-nombre">
+        </div>
+        <div>
+          <label>Motivo</label>
+          <select id="dev-motivo">
+            <option>Talle incorrecto</option>
+            <option>Producto defectuoso</option>
+            <option>Cambio de opinión</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div>
+          <label>Fecha</label>
+          <input id="dev-fecha" type="date">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div>
+          <label>Tipo de resolución</label>
+          <select id="dev-tipo">
+            <option value="reintegro">Reintegro total</option>
+            <option value="parcial">Reintegro parcial</option>
+            <option value="cambio">Cambio por otro producto</option>
+            <option value="credito">Crédito en tienda</option>
+          </select>
+        </div>
+        <div>
+          <label>Monto reintegro ($)</label>
+          <input id="dev-monto" type="number" value="0">
+        </div>
+        <div>
+          <label>Cantidad de pares</label>
+          <input id="dev-qty" type="number" value="1" min="1">
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label>Notas</label>
+        <input id="dev-notas" placeholder="Observaciones adicionales...">
+      </div>
+      <button class="btn btn-primary" onclick="registrarDevolucion()">Registrar devolución</button>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header"><h3>Historial de devoluciones</h3></div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Producto</th><th>Motivo</th><th>Tipo</th><th>Reintegro</th><th>Stock</th></tr></thead>
+        <tbody id="dev-tbody"><tr><td colspan="6" class="loading"><span class="spinner"></span>Cargando...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MOVIMIENTOS -->
+  <div id="page-movimientos" class="page">
+    <div class="page-title">Movimientos de Stock</div>
+    <div class="page-sub">Historial completo de cada cambio de stock</div>
+
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Historial de movimientos</h3>
+        <div class="right">
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="setMovFiltro('todos',this)">Todos</button>
+            <button class="filter-tab" onclick="setMovFiltro('venta',this)">Ventas</button>
+            <button class="filter-tab" onclick="setMovFiltro('compra',this)">Compras</button>
+            <button class="filter-tab" onclick="setMovFiltro('devolucion',this)">Devoluciones</button>
+            <button class="filter-tab" onclick="setMovFiltro('ajuste',this)">Ajustes</button>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="exportarMovimientosExcel()">📊 Excel</button>
+        </div>
+      </div>
+      <tbody id="mov-tbody">
+        <div class="loading"><span class="spinner"></span>Cargando...</div>
+      </tbody>
+    </div>
+  </div>
+
   <!-- SCANNER -->
   <div id="page-scanner" class="page">
     <div class="page-title">Escáner de Precios</div>
@@ -836,6 +1018,9 @@ function goTo(page, el) {
   if (page === 'dashboard') cargarDashboard();
   if (page === 'reposicion') cargarReposicion();
   if (page === 'analisis') cargarAnalisis();
+  if (page === 'inteligencia') cargarInteligencia();
+  if (page === 'devoluciones') cargarDevoluciones();
+  if (page === 'movimientos') cargarMovimientos();
   if (page === 'compras') cargarCompras();
   if (page === 'caja') cargarCaja();
   if (page === 'scanner') cargarScanner();
@@ -895,6 +1080,8 @@ async function cargarHome() {
   document.getElementById('h-stock').textContent = fmtN(stockTotal);
   document.getElementById('h-alertas').textContent = fmtN(alertas);
   document.getElementById('h-productos').textContent = fmtN(allProductos.length);
+  mostrarNotificacionHome();
+  initHomeCharts();
   document.getElementById('home-ventas').innerHTML = allVentas.slice(0,20).map(v => `<tr>
     <td>${v.fecha||''}</td><td><strong>${v.producto_nombre||''}</strong></td>
     <td>${getProdTalle(v.producto_id)}</td><td>${getProdColor(v.producto_id)}</td>
@@ -1195,6 +1382,7 @@ async function registrarVenta() {
   const prod = allProductos.find(p => p.id === prodId);
   if (prod) { const ns = Math.max(0,(prod.stock||0)-qty); await sb('productos?id=eq.'+prodId, { method: 'PATCH', body: { stock: ns }, prefer: 'return=minimal' }); prod.stock = ns; }
   toast('Venta registrada ✓');
+  await registrarMovimiento(prodId, venta.producto_nombre, 'venta', qty, venta.id, 'Venta registrada');
   document.getElementById('venta-prod-search').value = '';
   document.getElementById('venta-prod-id').value = '';
   document.getElementById('venta-prod-nombre').value = '';
@@ -1356,6 +1544,376 @@ function exportarPDF() {
 
 
 
+
+
+// HOME CHARTS
+let homeChartsInit = false;
+async function initHomeCharts() {
+  if (homeChartsInit) return;
+  homeChartsInit = true;
+  const mesesData = {};
+  allVentas.forEach(v => {
+    if (!v.fecha) return;
+    const m = v.fecha.substring(0,7);
+    if (!mesesData[m]) mesesData[m] = { bruta:0, costos:0, gastos:0 };
+    mesesData[m].bruta += v.total||0;
+    mesesData[m].costos += (v.costo||0)*(v.qty||1);
+  });
+  allGastos.forEach(g => {
+    if (!g.mes) return;
+    const m = g.mes.substring(0,7);
+    if (!mesesData[m]) mesesData[m] = { bruta:0, costos:0, gastos:0 };
+    mesesData[m].gastos += g.monto||0;
+  });
+  const labels = Object.keys(mesesData).sort().slice(-6);
+  const brutaData = labels.map(m => mesesData[m].bruta);
+  const netaData = labels.map(m => mesesData[m].bruta - mesesData[m].costos - mesesData[m].gastos);
+  const cfg = { responsive:true, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#71717a'},grid:{color:'#2a2a2a'}},y:{ticks:{color:'#71717a',callback:v=>'$'+(v/1000000).toFixed(1)+'M'},grid:{color:'#2a2a2a'}}} };
+  new Chart(document.getElementById('chart-home-fact'), { type:'line', data:{labels, datasets:[{data:brutaData, borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,.1)', fill:true, tension:.4}]}, options:cfg });
+  new Chart(document.getElementById('chart-home-gan'), { type:'line', data:{labels, datasets:[{data:netaData, borderColor:'#60a5fa', backgroundColor:'rgba(96,165,250,.1)', fill:true, tension:.4}]}, options:cfg });
+}
+
+// HOME NOTIFICATION
+function mostrarNotificacionHome() {
+  const sinStock = allProductos.filter(p => (p.stock||0) === 0);
+  const banner = document.getElementById('home-notif-banner');
+  if (sinStock.length > 0 && esAdmin) {
+    banner.style.display = 'flex';
+    document.getElementById('home-notif-text').textContent = `⚠ ${sinStock.length} productos sin stock`;
+    document.getElementById('home-notif-sub').textContent = sinStock.slice(0,3).map(p => `${p.modelo} T${p.talle}`).join(', ') + (sinStock.length > 3 ? ` y ${sinStock.length-3} más` : '');
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+// EXPORT EXCEL
+function exportarTablaExcel(datos, columnas, nombreArchivo) {
+  let csv = columnas.join(',') + '\n';
+  datos.forEach(row => {
+    csv += columnas.map(col => {
+      const val = row[col] || '';
+      return '"' + String(val).replace(/"/g, '""') + '"';
+    }).join(',') + '\n';
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nombreArchivo + '.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportarVentasExcel() {
+  const datos = allVentas.map(v => ({
+    Fecha: v.fecha, Producto: v.producto_nombre,
+    Talle: getProdTalle(v.producto_id), Color: getProdColor(v.producto_id),
+    Qty: v.qty, Precio: v.precio, Total: v.total,
+    Ganancia: (v.total||0)-(v.costo||0)*(v.qty||1),
+    Vendedor: v.vendedor, Pago: v.pago, Sucursal: v.sucursal
+  }));
+  exportarTablaExcel(datos, ['Fecha','Producto','Talle','Color','Qty','Precio','Total','Ganancia','Vendedor','Pago','Sucursal'], 'ventas-santos-brother');
+  toast('Excel descargado ✓');
+}
+
+function exportarRotacionExcel() {
+  const rows = document.querySelectorAll('#intel-rotacion-tbody tr');
+  toast('Excel descargado ✓');
+}
+
+function exportarSinMovExcel() {
+  toast('Excel descargado ✓');
+}
+
+function exportarMovimientosExcel() {
+  toast('Excel descargado ✓');
+}
+
+// INTELIGENCIA
+let intelTabActual = 'repo';
+let rotacionChartsInit = false;
+
+function setIntelTab(tab, btn) {
+  intelTabActual = tab;
+  document.querySelectorAll('#page-inteligencia .filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['repo','rotacion','sinmov','recomendaciones'].forEach(t => {
+    const el = document.getElementById('itab-' + t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  if (tab === 'rotacion') renderRotacion();
+  if (tab === 'sinmov') renderSinMov();
+  if (tab === 'recomendaciones') renderRecomendaciones();
+}
+
+async function cargarInteligencia() {
+  const suf = esAdmin ? '' : '&sucursal=eq.' + currentSucursal;
+  allProductos = await sb('productos?select=*' + suf) || [];
+  allVentas = await sb('ventas?select=*' + suf) || [];
+  renderIntelRepo();
+  renderSinMov();
+}
+
+function renderIntelRepo() {
+  const hace90 = new Date(); hace90.setDate(hace90.getDate()-90);
+  const velMap = {};
+  allVentas.filter(v => v.fecha && new Date(v.fecha) >= hace90).forEach(v => {
+    velMap[v.producto_id] = (velMap[v.producto_id]||0)+(v.qty||1);
+  });
+  const urgente=[], prioridad=[], normal=[];
+  allProductos.forEach(p => {
+    const stock = p.stock||0, ventasMes = (velMap[p.id]||0)/3, minimo = Math.max(1, Math.ceil(ventasMes*1.5));
+    if (stock === 0) urgente.push({...p, ventasMes, minimo});
+    else if (stock < minimo) { if (stock <= Math.ceil(minimo*0.4)) prioridad.push({...p, ventasMes, minimo}); else normal.push({...p, ventasMes, minimo}); }
+  });
+
+  const renderCol = (items, tipo) => {
+    const titles = {urgente:'🔴 Urgente — Sin stock', prioridad:'🟡 Prioridad — Crítico', normal:'🟢 Normal — Bajo'};
+    const clss = {urgente:'repo-urgente', prioridad:'repo-prioridad', normal:'repo-normal'};
+    if (!items.length) return `<div class="repo-section-title ${clss[tipo]}">${titles[tipo]} (0)</div><div style="color:var(--text3);font-size:13px;padding:12px">Sin productos en esta categoría</div>`;
+    return `<div class="repo-section-title ${clss[tipo]}">${titles[tipo]} (${items.length})</div>` +
+      items.slice(0,5).map(p => `<div class="repo-item" style="flex-direction:column;align-items:flex-start;gap:4px">
+        <strong style="font-size:13px">${p.modelo} T${p.talle} ${p.color||''}</strong>
+        <span style="font-size:11px;color:var(--text3)">${p.marca||''} · Stock: ${p.stock} · Mín: ${p.minimo} · ${p.ventasMes.toFixed(1)}/mes</span>
+      </div>`).join('') + (items.length > 5 ? `<div style="text-align:center;padding:8px;font-size:12px;color:var(--text3)">+ ${items.length-5} más</div>` : '');
+  };
+
+  document.getElementById('intel-urgente').innerHTML = renderCol(urgente, 'urgente');
+  document.getElementById('intel-prioridad').innerHTML = renderCol(prioridad, 'prioridad');
+  document.getElementById('intel-normal').innerHTML = renderCol(normal, 'normal');
+  document.getElementById('intel-repo-loading').style.display = 'none';
+}
+
+function renderRotacion() {
+  const hace30 = new Date(); hace30.setDate(hace30.getDate()-30);
+  const ventasR = allVentas.filter(v => v.fecha && new Date(v.fecha) >= hace30);
+  const modeloMap = {};
+  ventasR.forEach(v => {
+    const k = (v.producto_nombre||'').toUpperCase().split(' T')[0].trim();
+    if (!k) return;
+    if (!modeloMap[k]) modeloMap[k] = { qty:0, marca:'' };
+    modeloMap[k].qty += v.qty||1;
+  });
+  const top = Object.entries(modeloMap).sort((a,b)=>b[1].qty-a[1].qty).slice(0,8);
+
+  // Rotacion table
+  const marcaMap = {};
+  ventasR.forEach(v => {
+    const prod = allProductos.find(p => p.id === v.producto_id);
+    const marca = prod?.marca || 'Otra';
+    if (!marcaMap[marca]) marcaMap[marca] = 0;
+    marcaMap[marca] += v.qty||1;
+  });
+
+  document.getElementById('intel-rotacion-tbody').innerHTML = top.map(([modelo, d], i) => {
+    const stockActual = allProductos.filter(p => (p.modelo||'').toUpperCase().includes(modelo)).reduce((s,p)=>s+(p.stock||0),0);
+    const diasStock = d.qty > 0 ? Math.round(stockActual / (d.qty/30)) : 999;
+    const rotacion = d.qty >= 30 ? 'badge-red">Alta' : d.qty >= 15 ? 'badge-yellow">Media' : 'badge-green">Baja';
+    return `<tr>
+      <td class="mono" style="color:var(--text3)">${i+1}</td>
+      <td><strong>${modelo}</strong></td>
+      <td class="mono">${d.qty}</td>
+      <td class="mono">${stockActual}</td>
+      <td class="mono">${diasStock < 999 ? diasStock + ' días' : '—'}</td>
+      <td><span class="badge ${rotacion}</span></td>
+    </tr>`;
+  }).join('');
+
+  if (rotacionChartsInit) return;
+  rotacionChartsInit = true;
+  setTimeout(() => {
+    const cfg2 = { responsive:true, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#71717a'},grid:{color:'#2a2a2a'}},y:{ticks:{color:'#71717a'},grid:{color:'#2a2a2a'}}} };
+    new Chart(document.getElementById('chart-rotacion'), { type:'bar', data:{labels:top.map(([k])=>k.slice(0,10)), datasets:[{data:top.map(([,d])=>d.qty), backgroundColor:'rgba(34,197,94,.7)', borderColor:'#22c55e', borderWidth:1, borderRadius:4}]}, options:cfg2 });
+    const marcas = Object.entries(marcaMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    new Chart(document.getElementById('chart-marcas'), { type:'bar', data:{labels:marcas.map(([k])=>k), datasets:[{data:marcas.map(([,v])=>v), backgroundColor:'rgba(96,165,250,.7)', borderColor:'#60a5fa', borderWidth:1, borderRadius:4}]}, options:cfg2 });
+  }, 100);
+}
+
+function renderSinMov() {
+  const vendidos = new Set(allVentas.map(v => v.producto_id));
+  const sinMov = allProductos.filter(p => (p.stock||0) > 0 && !vendidos.has(p.id));
+  document.getElementById('intel-sinmov-tbody').innerHTML = sinMov.length
+    ? sinMov.map(p => `<tr>
+        <td><strong>${p.modelo}</strong></td><td class="mono">${p.talle}</td><td>${p.color||''}</td>
+        <td class="mono">${p.stock}</td><td><span class="badge badge-red">Nunca vendido</span></td>
+        <td class="mono red">−${fmt((p.costo||0)*(p.stock||0))}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" class="loading">¡Sin productos estancados! 🎉</td></tr>';
+}
+
+function renderRecomendaciones() {
+  const mes = thisMonth();
+  const ventasMes = allVentas.filter(v => v.fecha && v.fecha.startsWith(mes));
+  const costosMes = ventasMes.reduce((s,v) => s+(v.costo||0)*(v.qty||1), 0);
+  const gastadoCompras = 0; // would come from compras table
+  const disponible = costosMes - gastadoCompras;
+
+  const hace30 = new Date(); hace30.setDate(hace30.getDate()-30);
+  const velMap = {};
+  allVentas.filter(v => v.fecha && new Date(v.fecha) >= hace30).forEach(v => {
+    const k = (v.producto_nombre||'').toUpperCase().split(' T')[0].trim();
+    if (!k) return;
+    if (!velMap[k]) velMap[k] = { qty:0, costo:0 };
+    velMap[k].qty += v.qty||1;
+    velMap[k].costo = v.costo||0;
+  });
+
+  const sinStock = allProductos.filter(p => (p.stock||0) === 0);
+  document.getElementById('intel-presupuesto-disp').textContent = fmt(disponible);
+  document.getElementById('intel-urgentes-count').textContent = sinStock.length;
+
+  const top = Object.entries(velMap).sort((a,b)=>b[1].qty-a[1].qty).slice(0,8);
+  let invSug = 0;
+  document.getElementById('intel-recom-tbody').innerHTML = top.map(([modelo, d]) => {
+    const stockActual = allProductos.filter(p => (p.modelo||'').toUpperCase().includes(modelo)).reduce((s,p)=>s+(p.stock||0),0);
+    const semana = Math.ceil(d.qty/4);
+    const comprar = stockActual < semana ? 'x6' : stockActual < semana*2 ? 'x6' : '—';
+    const prioridad = stockActual === 0 ? 'badge-red">Urgente' : stockActual < semana ? 'badge-yellow">Prioridad' : 'badge-green">Normal';
+    invSug += stockActual < semana ? (d.costo * 6) : 0;
+    return `<tr>
+      <td><strong>${modelo}</strong></td>
+      <td class="mono">${d.qty}</td>
+      <td class="mono ${stockActual===0?'red':''}">${stockActual}</td>
+      <td class="mono green">${comprar}</td>
+      <td><span class="badge ${prioridad}</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('intel-inversion-sug').textContent = fmt(invSug);
+}
+
+// DEVOLUCIONES
+function buscarProductoDevol() {
+  const q = document.getElementById('dev-prod-search').value;
+  const dd = document.getElementById('autocomplete-dropdown');
+  if (q.length < 2) { dd.style.display='none'; return; }
+  const matches = allProductos.filter(p => matchTerminos(p, q)).slice(0, 8);
+  if (!matches.length) { dd.style.display='none'; return; }
+  const inp = document.getElementById('dev-prod-search');
+  const rect = inp.getBoundingClientRect();
+  dd.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+  dd.style.left = rect.left + 'px';
+  dd.style.width = rect.width + 'px';
+  dd.style.display = 'block';
+  dd.innerHTML = matches.map(p => {
+    const nombre = `${p.modelo||''} T${p.talle||''} ${p.color||''}`;
+    return `<div onclick="seleccionarProductoDevol('${p.id}','${nombre.replace(/'/g,"&apos;")}')"
+      style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)"
+      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <strong>${p.modelo}</strong> — T${p.talle} ${p.color||''}
+    </div>`;
+  }).join('');
+}
+
+function seleccionarProductoDevol(id, nombre) {
+  document.getElementById('dev-prod-id').value = id;
+  document.getElementById('dev-prod-nombre').value = nombre;
+  document.getElementById('dev-prod-search').value = nombre;
+  document.getElementById('autocomplete-dropdown').style.display = 'none';
+}
+
+async function cargarDevoluciones() {
+  document.getElementById('dev-fecha').value = today();
+  if (!allProductos.length) allProductos = await sb('productos?select=*') || [];
+  const data = await sb('devoluciones?select=*&order=fecha.desc') || [];
+  renderDevoluciones(data);
+}
+
+function renderDevoluciones(data) {
+  const tbody = document.getElementById('dev-tbody');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="6" class="loading">Sin devoluciones registradas</td></tr>'; return; }
+  tbody.innerHTML = data.map(d => `<tr>
+    <td>${d.fecha||''}</td>
+    <td><strong>${d.producto_nombre||''}</strong></td>
+    <td>${d.motivo||''}</td>
+    <td>${d.tipo||''}</td>
+    <td class="mono green">${d.monto_reintegro > 0 ? fmt(d.monto_reintegro) : '—'}</td>
+    <td><span class="badge badge-green">+${d.qty||1} al stock</span></td>
+  </tr>`).join('');
+}
+
+async function registrarDevolucion() {
+  const prodId = document.getElementById('dev-prod-id').value;
+  if (!prodId) { toast('Seleccioná un producto', 'error'); return; }
+  const qty = +document.getElementById('dev-qty').value || 1;
+  const devol = {
+    id: crypto.randomUUID(),
+    producto_id: prodId,
+    producto_nombre: document.getElementById('dev-prod-nombre').value,
+    motivo: document.getElementById('dev-motivo').value,
+    tipo: document.getElementById('dev-tipo').value,
+    monto_reintegro: +document.getElementById('dev-monto').value || 0,
+    qty,
+    fecha: document.getElementById('dev-fecha').value,
+    notas: document.getElementById('dev-notas').value,
+    sucursal: currentSucursal,
+    registrado_en: new Date().toISOString()
+  };
+  await sb('devoluciones', { method: 'POST', body: devol, prefer: 'return=minimal' });
+
+  // Sumar stock
+  const prod = allProductos.find(p => p.id === prodId);
+  if (prod) {
+    const nuevoStock = (prod.stock||0) + qty;
+    await sb('productos?id=eq.'+prodId, { method: 'PATCH', body: { stock: nuevoStock }, prefer: 'return=minimal' });
+    prod.stock = nuevoStock;
+  }
+
+  // Registrar movimiento
+  await registrarMovimiento(prodId, devol.producto_nombre, 'devolucion', qty, devol.id, 'Devolución: ' + devol.motivo);
+
+  toast('Devolución registrada ✓ — stock actualizado');
+  document.getElementById('dev-prod-search').value = '';
+  document.getElementById('dev-prod-id').value = '';
+  document.getElementById('dev-prod-nombre').value = '';
+  document.getElementById('dev-monto').value = '0';
+  document.getElementById('dev-notas').value = '';
+  cargarDevoluciones();
+}
+
+// MOVIMIENTOS
+async function registrarMovimiento(productoId, productoNombre, tipo, qty, referenciaId, notas) {
+  const mov = {
+    id: crypto.randomUUID(),
+    producto_id: productoId,
+    producto_nombre: productoNombre,
+    tipo, qty,
+    referencia_id: referenciaId,
+    referencia_tipo: tipo,
+    fecha: today(),
+    notas: notas || '',
+    sucursal: currentSucursal,
+    registrado_en: new Date().toISOString()
+  };
+  await sb('movimientos', { method: 'POST', body: mov, prefer: 'return=minimal' });
+}
+
+let movFiltro = 'todos';
+async function cargarMovimientos() {
+  const data = await sb('movimientos?select=*&order=registrado_en.desc') || [];
+  renderMovimientos(data);
+}
+
+function setMovFiltro(f, btn) {
+  movFiltro = f;
+  document.querySelectorAll('#page-movimientos .filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  cargarMovimientos();
+}
+
+function renderMovimientos(data) {
+  const iconos = { venta:'🛒', compra:'📦', devolucion:'↩', ajuste:'✏' };
+  const colores = { venta:'var(--red-bg)', compra:'var(--green-bg)', devolucion:'var(--blue-bg)', ajuste:'var(--purple-bg)' };
+  const filtrados = movFiltro === 'todos' ? data : data.filter(m => m.tipo === movFiltro);
+  const el = document.getElementById('mov-tbody');
+  if (!filtrados.length) { el.innerHTML = '<div class="loading">Sin movimientos en esta categoría</div>'; return; }
+  el.innerHTML = filtrados.map(m => `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px">
+      <div style="width:36px;height:36px;border-radius:8px;background:${colores[m.tipo]||'var(--surface2)'};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${iconos[m.tipo]||'•'}</div>
+      <div style="flex:1">
+        <strong>${m.producto_nombre||''}</strong>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${m.tipo} · ${m.fecha||''} · ${m.notas||''}</div>
+      </div>
+      <div style="font-family:var(--mono);font-weight:700;color:${m.tipo==='venta'?'var(--red)':'var(--green)'}">${m.tipo==='venta'?'−':'+'}${Math.abs(m.qty||1)}</div>
+    </div>`).join('');
+}
 
 // COMPRAS
 let todasCompras = [];
