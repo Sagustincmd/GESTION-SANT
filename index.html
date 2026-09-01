@@ -234,6 +234,9 @@ input:focus, select:focus { border-color: var(--green); }
     <div class="nav-item" onclick="goTo('caja',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Caja
     </div>
+    <div class="nav-item admin-only" onclick="goTo('compras',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>Compras
+    </div>
     <div class="nav-item admin-only" onclick="goTo('scanner',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h2v10H7zm4 0h2v10h-2zm4 0h2v10h-2z"/></svg>Escáner <span style="font-size:10px;background:var(--yellow-bg);color:var(--yellow);padding:2px 6px;border-radius:10px;margin-left:4px">DEMO</span>
     </div>
@@ -525,6 +528,113 @@ input:focus, select:focus { border-color: var(--green); }
     </div>
   </div>
 
+  <!-- COMPRAS -->
+  <div id="page-compras" class="page">
+    <div class="page-title">Compras</div>
+    <div class="page-sub">Registrá cada compra y controlá tu presupuesto de recompra</div>
+
+    <!-- PRESUPUESTO BANNER -->
+    <div id="compras-presupuesto-banner" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:600;margin-bottom:6px">Presupuesto disponible este mes</div>
+          <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+            <div style="font-size:28px;font-weight:700;font-family:var(--mono);color:var(--green)" id="comp-presupuesto-disp">—</div>
+            <div style="font-size:13px;color:var(--text3)">de <span id="comp-presupuesto-total" style="color:var(--text2);font-family:var(--mono)">—</span> recuperación recompra</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:600;margin-bottom:6px">Ya compraste este mes</div>
+          <div style="font-size:24px;font-weight:700;font-family:var(--mono);color:var(--yellow)" id="comp-gastado">—</div>
+        </div>
+        <div style="width:100%">
+          <div style="background:var(--surface2);border-radius:4px;height:8px;overflow:hidden">
+            <div id="comp-barra-uso" style="height:100%;background:var(--green);border-radius:4px;transition:width .3s;width:0%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:4px">
+            <span id="comp-pct-uso">0% utilizado</span>
+            <span id="comp-alerta-texto"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+
+      <!-- FORMULARIO -->
+      <div class="form-box">
+        <h3>Registrar compra</h3>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div><label>Modelo</label><input id="comp-modelo" placeholder="DUNK LOW" oninput="compCalcuar()"></div>
+          <div><label>Marca</label><input id="comp-marca" placeholder="NIKE"></div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label>Fecha de compra</label>
+          <input id="comp-fecha" type="date">
+        </div>
+        <div style="margin-bottom:12px">
+          <label>Cantidad de pares</label>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div class="comp-qty-btn active" onclick="compSelQty(6,this)" style="flex:1;padding:8px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:2px solid var(--green);background:var(--green-bg);color:var(--green);font-family:var(--mono);text-align:center">x6</div>
+            <div class="comp-qty-btn" onclick="compSelQty(12,this)" style="flex:1;padding:8px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:var(--surface2);color:var(--text2);font-family:var(--mono);text-align:center">x12</div>
+            <div class="comp-qty-btn" onclick="compSelQty(0,this)" style="flex:1;padding:8px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:var(--surface2);color:var(--text2);font-family:var(--mono);text-align:center">Otro</div>
+          </div>
+          <input id="comp-qty" type="number" value="6" min="1" oninput="compCalcuar()">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+          <div><label>Precio/par (R$)</label><input id="comp-precio-real" type="number" placeholder="0" oninput="compCalcuar()"></div>
+          <div><label>Cotización R$→$AR</label><input id="comp-cotizacion" type="number" placeholder="Ej: 215" oninput="compCalcuar()"></div>
+          <div><label>Flete/par (R$)</label><input id="comp-flete" type="number" placeholder="0" oninput="compCalcuar()"></div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label>Notas (opcional)</label>
+          <input id="comp-notas" placeholder="Proveedor, condiciones...">
+        </div>
+
+        <!-- CALC PREVIEW -->
+        <div id="comp-calc" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px;font-size:13px">
+          <div style="font-weight:600;color:var(--text2);margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:1px">Resumen de costos</div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Costo par en $AR</span><span style="font-family:var(--mono);color:var(--yellow)" id="cc-par-ar">—</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Flete par en $AR</span><span style="font-family:var(--mono)" id="cc-flete-par">—</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Flete total</span><span style="font-family:var(--mono)" id="cc-flete-total">—</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-weight:700">Costo final por par</span><span style="font-family:var(--mono);color:var(--green);font-size:16px;font-weight:700" id="cc-costo-final">—</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="font-weight:700">Inversión total</span><span style="font-family:var(--mono);color:var(--green);font-weight:700" id="cc-inversion">—</span></div>
+          <div id="cc-alerta-modelo" style="margin-top:10px;display:none;padding:8px;border-radius:6px;font-size:12px"></div>
+          <div id="cc-alerta-presupuesto" style="margin-top:6px;display:none;padding:8px;border-radius:6px;font-size:12px"></div>
+        </div>
+
+        <button class="btn btn-primary" onclick="guardarCompra()" style="width:100%">Registrar compra</button>
+      </div>
+
+      <!-- RECOMENDACIONES -->
+      <div>
+        <div class="form-box" style="margin-bottom:16px">
+          <h3>🎯 Qué comprar esta semana</h3>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Basado en velocidad de ventas últimos 30 días</div>
+          <div id="comp-recomendaciones"><div class="loading"><span class="spinner"></span>Calculando...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Historial de compras</h3>
+        <div class="right">
+          <select id="comp-mes-filter" onchange="renderComprasHistorial()" style="width:180px">
+            <option value="">Todos los meses</option>
+          </select>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Modelo</th><th>Marca</th><th>Pares</th><th>Precio R$</th><th>Cotización</th><th>Flete/par R$</th><th>Costo/par $AR</th><th>Inversión total</th><th>vs Ventas</th><th></th></tr></thead>
+        <tbody id="comp-historial-tbody"><tr><td colspan="11" class="loading">Sin compras registradas</td></tr></tbody>
+      </table>
+      <div id="comp-historial-totales" style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:24px;font-size:13px;color:var(--text2)"></div>
+    </div>
+  </div>
+
   <!-- SCANNER -->
   <div id="page-scanner" class="page">
     <div class="page-title">Escáner de Precios</div>
@@ -726,6 +836,7 @@ function goTo(page, el) {
   if (page === 'dashboard') cargarDashboard();
   if (page === 'reposicion') cargarReposicion();
   if (page === 'analisis') cargarAnalisis();
+  if (page === 'compras') cargarCompras();
   if (page === 'caja') cargarCaja();
   if (page === 'scanner') cargarScanner();
 }
@@ -1244,6 +1355,286 @@ function exportarPDF() {
 }
 
 
+
+
+// COMPRAS
+let todasCompras = [];
+let compPresupuesto = 0;
+
+async function cargarCompras() {
+  // Cargar datos necesarios
+  if (!allVentas.length) allVentas = await sb('ventas?select=*') || [];
+  if (!allProductos.length) allProductos = await sb('productos?select=*') || [];
+
+  // Cargar compras desde Supabase
+  const data = await sb('compras?select=*&order=fecha.desc') || [];
+  todasCompras = data;
+
+  // Calcular presupuesto = costo de lo vendido este mes
+  const mes = thisMonth();
+  const ventasMes = allVentas.filter(v => v.fecha && v.fecha.startsWith(mes));
+  compPresupuesto = ventasMes.reduce((s,v) => s+(v.costo||0)*(v.qty||1), 0);
+
+  // Set fecha default
+  document.getElementById('comp-fecha').value = today();
+
+  actualizarPresupuestoBanner();
+  renderComprasHistorial();
+  renderRecomendaciones();
+}
+
+function actualizarPresupuestoBanner() {
+  const mes = thisMonth();
+  const gastadoMes = todasCompras
+    .filter(c => c.fecha && c.fecha.startsWith(mes))
+    .reduce((s,c) => s+(c.inversion_total||0), 0);
+  const disponible = compPresupuesto - gastadoMes;
+  const pct = compPresupuesto > 0 ? Math.min(100, Math.round(gastadoMes/compPresupuesto*100)) : 0;
+
+  document.getElementById('comp-presupuesto-total').textContent = fmt(compPresupuesto);
+  document.getElementById('comp-gastado').textContent = fmt(gastadoMes);
+  document.getElementById('comp-presupuesto-disp').textContent = fmt(Math.max(0, disponible));
+  document.getElementById('comp-presupuesto-disp').style.color = disponible < 0 ? 'var(--red)' : 'var(--green)';
+  document.getElementById('comp-pct-uso').textContent = pct + '% utilizado';
+
+  const barra = document.getElementById('comp-barra-uso');
+  barra.style.width = pct + '%';
+  barra.style.background = pct >= 100 ? 'var(--red)' : pct >= 80 ? 'var(--yellow)' : 'var(--green)';
+
+  const alertaEl = document.getElementById('comp-alerta-texto');
+  if (pct >= 100) alertaEl.innerHTML = '<span style="color:var(--red);font-weight:600">⚠ Presupuesto superado</span>';
+  else if (pct >= 80) alertaEl.innerHTML = '<span style="color:var(--yellow);font-weight:600">⚠ Cerca del límite</span>';
+  else alertaEl.textContent = '';
+}
+
+function compSelQty(qty, btn) {
+  document.querySelectorAll('.comp-qty-btn').forEach(b => {
+    b.style.borderColor = 'var(--border)';
+    b.style.background = 'var(--surface2)';
+    b.style.color = 'var(--text2)';
+  });
+  btn.style.borderColor = 'var(--green)';
+  btn.style.background = 'var(--green-bg)';
+  btn.style.color = 'var(--green)';
+  if (qty > 0) document.getElementById('comp-qty').value = qty;
+  compCalcuar();
+}
+
+function compCalcuar() {
+  const precioReal = +document.getElementById('comp-precio-real').value || 0;
+  const cotizacion = +document.getElementById('comp-cotizacion').value || 0;
+  const qty = +document.getElementById('comp-qty').value || 0;
+  const fleteReal = +document.getElementById('comp-flete').value || 0;
+  const modelo = document.getElementById('comp-modelo').value.trim().toLowerCase();
+
+  if (!precioReal || !cotizacion || !qty) {
+    document.getElementById('comp-calc').style.display = 'none';
+    return;
+  }
+
+  const costoParAR = precioReal * cotizacion;
+  const fleteParAR = fleteReal * cotizacion;
+  const fleteTotalAR = fleteParAR * qty;
+  const costoFinal = costoParAR + fleteParAR;
+  const inversion = costoFinal * qty;
+
+  document.getElementById('cc-par-ar').textContent = fmt(costoParAR);
+  document.getElementById('cc-flete-par').textContent = fmt(fleteParAR);
+  document.getElementById('cc-flete-total').textContent = fmt(fleteTotalAR);
+  document.getElementById('cc-costo-final').textContent = fmt(costoFinal);
+  document.getElementById('cc-inversion').textContent = fmt(inversion);
+  document.getElementById('comp-calc').style.display = 'block';
+
+  // Alerta vs velocidad de ventas del modelo
+  if (modelo) {
+    const hace30 = new Date(); hace30.setDate(hace30.getDate()-30);
+    const ventasModelo = allVentas.filter(v =>
+      (v.producto_nombre||'').toLowerCase().includes(modelo) &&
+      v.fecha && new Date(v.fecha) >= hace30
+    );
+    const ventasMes = ventasModelo.reduce((s,v) => s+(v.qty||1), 0);
+    const alertaEl = document.getElementById('cc-alerta-modelo');
+    if (ventasMes > 0) {
+      alertaEl.style.display = 'block';
+      if (qty < ventasMes * 0.8) {
+        alertaEl.style.background = 'var(--yellow-bg)';
+        alertaEl.style.color = 'var(--yellow)';
+        alertaEl.textContent = '⚠ Compra baja — vendiste ' + ventasMes + ' pares este modelo en 30 días';
+      } else if (qty > ventasMes * 2) {
+        alertaEl.style.background = 'var(--red-bg)';
+        alertaEl.style.color = 'var(--red)';
+        alertaEl.textContent = '⚠ Compra alta — vendiste ' + ventasMes + ' pares este modelo en 30 días';
+      } else {
+        alertaEl.style.background = 'var(--green-bg)';
+        alertaEl.style.color = 'var(--green)';
+        alertaEl.textContent = '✓ Compra acorde — vendiste ' + ventasMes + ' pares este modelo en 30 días';
+      }
+    } else {
+      alertaEl.style.display = 'none';
+    }
+  }
+
+  // Alerta vs presupuesto
+  const mes = thisMonth();
+  const gastadoMes = todasCompras.filter(c => c.fecha && c.fecha.startsWith(mes)).reduce((s,c) => s+(c.inversion_total||0), 0);
+  const disponible = compPresupuesto - gastadoMes;
+  const alertaPres = document.getElementById('cc-alerta-presupuesto');
+  if (compPresupuesto > 0) {
+    alertaPres.style.display = 'block';
+    if (inversion > disponible) {
+      alertaPres.style.background = 'var(--red-bg)';
+      alertaPres.style.color = 'var(--red)';
+      alertaPres.textContent = '⚠ Te pasás del presupuesto por ' + fmt(inversion - disponible) + ' — disponible: ' + fmt(disponible);
+    } else {
+      alertaPres.style.background = 'var(--green-bg)';
+      alertaPres.style.color = 'var(--green)';
+      alertaPres.textContent = '✓ Dentro del presupuesto — te quedan ' + fmt(disponible - inversion) + ' después de esta compra';
+    }
+  } else {
+    alertaPres.style.display = 'none';
+  }
+}
+
+async function guardarCompra() {
+  const modelo = document.getElementById('comp-modelo').value.trim();
+  const marca = document.getElementById('comp-marca').value.trim();
+  const fecha = document.getElementById('comp-fecha').value;
+  const qty = +document.getElementById('comp-qty').value || 0;
+  const precioReal = +document.getElementById('comp-precio-real').value || 0;
+  const cotizacion = +document.getElementById('comp-cotizacion').value || 0;
+  const fleteReal = +document.getElementById('comp-flete').value || 0;
+  const notas = document.getElementById('comp-notas').value.trim();
+
+  if (!modelo || !fecha || !qty || !precioReal || !cotizacion) {
+    toast('Completá modelo, fecha, cantidad, precio y cotización', 'error'); return;
+  }
+
+  const costoParAR = precioReal * cotizacion;
+  const fleteParAR = fleteReal * cotizacion;
+  const costoFinal = costoParAR + fleteParAR;
+  const inversionTotal = costoFinal * qty;
+
+  const compra = {
+    id: crypto.randomUUID(),
+    fecha, modelo, marca, qty,
+    precio_real: precioReal,
+    cotizacion,
+    flete_real: fleteReal,
+    flete_par_ar: fleteParAR,
+    costo_par_ar: costoParAR,
+    costo_final: costoFinal,
+    inversion_total: inversionTotal,
+    notas,
+    registrado_en: new Date().toISOString()
+  };
+
+  await sb('compras', { method: 'POST', body: compra, prefer: 'return=minimal' });
+  todasCompras.unshift(compra);
+  toast('Compra registrada ✓');
+
+  // Limpiar form
+  ['comp-modelo','comp-marca','comp-notas'].forEach(id => document.getElementById(id).value = '');
+  ['comp-precio-real','comp-cotizacion','comp-flete'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('comp-qty').value = '6';
+  document.getElementById('comp-calc').style.display = 'none';
+
+  actualizarPresupuestoBanner();
+  renderComprasHistorial();
+}
+
+function renderComprasHistorial() {
+  const mesFiltro = document.getElementById('comp-mes-filter').value;
+  const meses = [...new Set(todasCompras.map(c => c.fecha ? c.fecha.substring(0,7) : null).filter(Boolean))].sort().reverse();
+  const sel = document.getElementById('comp-mes-filter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Todos los meses</option>' + meses.map(m => `<option value="${m}" ${m===current?'selected':''}>${m}</option>`).join('');
+
+  const filtradas = mesFiltro ? todasCompras.filter(c => c.fecha && c.fecha.startsWith(mesFiltro)) : todasCompras;
+  const hace30 = new Date(); hace30.setDate(hace30.getDate()-30);
+
+  const tbody = document.getElementById('comp-historial-tbody');
+  if (!filtradas.length) { tbody.innerHTML = '<tr><td colspan="11" class="loading">Sin compras registradas</td></tr>'; return; }
+
+  tbody.innerHTML = filtradas.map(c => {
+    const ventasModelo = allVentas.filter(v =>
+      (v.producto_nombre||'').toLowerCase().includes((c.modelo||'').toLowerCase()) &&
+      v.fecha && new Date(v.fecha) >= hace30
+    ).reduce((s,v) => s+(v.qty||1), 0);
+    let vsTag = '';
+    if (ventasModelo > 0) {
+      if (c.qty < ventasModelo * 0.8) vsTag = '<span class="badge badge-yellow">Compra baja</span>';
+      else if (c.qty > ventasModelo * 2) vsTag = '<span class="badge badge-red">Compra alta</span>';
+      else vsTag = '<span class="badge badge-green">OK</span>';
+    }
+    return `<tr>
+      <td>${c.fecha||''}</td>
+      <td><strong>${c.modelo||''}</strong></td>
+      <td>${c.marca||''}</td>
+      <td class="mono"><span class="badge badge-gray">x${c.qty}</span></td>
+      <td class="mono blue">R$${(c.precio_real||0).toLocaleString('es-AR')}</td>
+      <td class="mono" style="color:var(--text3)">$${(c.cotizacion||0).toLocaleString('es-AR')}</td>
+      <td class="mono">R$${(c.flete_real||0).toLocaleString('es-AR')}</td>
+      <td class="mono yellow">${fmt(c.costo_final)}</td>
+      <td class="mono green">${fmt(c.inversion_total)}</td>
+      <td>${vsTag}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="eliminarCompra('${c.id}')">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  const totalPares = filtradas.reduce((s,c)=>s+c.qty,0);
+  const totalInversion = filtradas.reduce((s,c)=>s+(c.inversion_total||0),0);
+  const totEl = document.getElementById('comp-historial-totales');
+  totEl.style.display = 'flex';
+  totEl.innerHTML = `
+    <span>Compras: <strong style="font-family:var(--mono)">${filtradas.length}</strong></span>
+    <span>Pares: <strong style="font-family:var(--mono)">${totalPares}</strong></span>
+    <span>Inversión: <strong style="color:var(--green);font-family:var(--mono)">${fmt(totalInversion)}</strong></span>`;
+}
+
+async function eliminarCompra(id) {
+  if (!confirm('¿Eliminar esta compra?')) return;
+  await sb('compras?id=eq.'+id, { method: 'DELETE' });
+  todasCompras = todasCompras.filter(c => c.id !== id);
+  toast('Compra eliminada');
+  actualizarPresupuestoBanner();
+  renderComprasHistorial();
+}
+
+function renderRecomendaciones() {
+  const hace30 = new Date(); hace30.setDate(hace30.getDate()-30);
+  const ventasRecientes = allVentas.filter(v => v.fecha && new Date(v.fecha) >= hace30);
+
+  // Agrupar por modelo
+  const modeloMap = {};
+  ventasRecientes.forEach(v => {
+    const k = (v.producto_nombre||'').toUpperCase().split(' T')[0].trim();
+    if (!k) return;
+    if (!modeloMap[k]) modeloMap[k] = { qty: 0, total: 0 };
+    modeloMap[k].qty += v.qty||1;
+    modeloMap[k].total += v.total||0;
+  });
+
+  const top = Object.entries(modeloMap).sort((a,b) => b[1].qty - a[1].qty).slice(0, 6);
+  const el = document.getElementById('comp-recomendaciones');
+
+  if (!top.length) { el.innerHTML = '<div style="color:var(--text3);font-size:13px">Sin datos de ventas suficientes</div>'; return; }
+
+  el.innerHTML = top.map(([modelo, d], i) => {
+    const semana = Math.ceil(d.qty / 4);
+    const urgencia = i < 2 ? 'red' : i < 4 ? 'yellow' : 'green';
+    const label = i < 2 ? 'Alta rotación' : i < 4 ? 'Media rotación' : 'Normal';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <div>
+        <strong>${modelo}</strong>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${d.qty} pares vendidos en 30 días</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:var(--mono);font-weight:700;color:var(--${urgencia})">~${semana}/semana</div>
+        <span class="badge badge-${urgencia === 'red' ? 'red' : urgencia === 'yellow' ? 'yellow' : 'green'}" style="font-size:10px">${label}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
 
 // CAJA
 let cajaFechaActual = '';
