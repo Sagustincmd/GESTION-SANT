@@ -877,7 +877,61 @@ input:focus, select:focus { border-color: var(--green); }
     </div>
   </div>
 
+
+  <!-- DEUDORES -->
+  <div id="page-deudores" class="page">
+    <div class="page-title">Deudores / Fiado</div>
+    <div class="page-sub">Controlá lo que te deben y registrá cada pago parcial</div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+      <div class="card"><div class="card-label">Total adeudado</div><div class="card-value red" id="deu-total">—</div><div class="card-sub" id="deu-count">cargando...</div></div>
+      <div class="card"><div class="card-label">Cobrado este mes</div><div class="card-value green" id="deu-cobrado">—</div><div class="card-sub">pagos recibidos</div></div>
+      <div class="card"><div class="card-label">Deudas vencidas</div><div class="card-value yellow" id="deu-vencidas">—</div><div class="card-sub">más de 30 días</div></div>
+    </div>
+
+    <div class="form-box" style="margin-bottom:20px">
+      <h3>Registrar nueva deuda</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label>Nombre del cliente</label><input id="deu-nombre" placeholder="Juan García"></div>
+        <div><label>Producto / Concepto</label><input id="deu-producto" placeholder="DUNK LOW T41"></div>
+        <div><label>Monto total ($)</label><input id="deu-monto" type="number" placeholder="0"></div>
+        <div><label>Fecha</label><input id="deu-fecha" type="date"></div>
+      </div>
+      <div style="margin-bottom:12px"><label>Notas</label><input id="deu-notas" placeholder="Acuerdo de pago, cuotas..."></div>
+      <button class="btn btn-primary" onclick="agregarDeuda()">Registrar deuda</button>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
+      <span style="font-size:13px;color:var(--text2)">Mostrar:</span>
+      <div class="filter-tabs" id="deu-filtros">
+        <button class="filter-tab active" onclick="setDeuFiltro('todos',this)">Todos</button>
+        <button class="filter-tab" onclick="setDeuFiltro('pendiente',this)">Pendientes</button>
+        <button class="filter-tab" onclick="setDeuFiltro('vencido',this)">Vencidos</button>
+        <button class="filter-tab" onclick="setDeuFiltro('saldado',this)">Saldados</button>
+      </div>
+    </div>
+
+    <div id="deu-lista"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+  </div>
+
 </main>
+
+<!-- MODAL DEUDOR PAGO -->
+<div id="modal-deudor-pago" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:400px;margin:20px">
+    <h3 style="font-size:16px;font-weight:600;margin-bottom:20px">Registrar pago</h3>
+    <input type="hidden" id="dpago-id">
+    <div style="margin-bottom:12px"><label>Cliente</label><input id="dpago-nombre" disabled style="opacity:.6"></div>
+    <div style="margin-bottom:12px"><label>Deuda restante</label><input id="dpago-restante" disabled style="opacity:.6;font-family:var(--mono);color:var(--red)"></div>
+    <div style="margin-bottom:12px"><label>Monto que paga ($)</label><input id="dpago-monto" type="number" placeholder="0"></div>
+    <div style="margin-bottom:12px"><label>Fecha de pago</label><input id="dpago-fecha" type="date"></div>
+    <div style="margin-bottom:20px"><label>Notas</label><input id="dpago-notas" placeholder="Efectivo, transferencia..."></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="cerrarModalDeudor()">Cancelar</button>
+      <button class="btn btn-primary" onclick="registrarPagoDeudor()">Registrar pago</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL EDITAR -->
 <div id="modal-editar" class="modal-overlay">
