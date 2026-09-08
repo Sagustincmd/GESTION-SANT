@@ -231,6 +231,9 @@ input:focus, select:focus { border-color: var(--green); }
     <div class="nav-item" onclick="goTo('caja',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Caja
     </div>
+    <div class="nav-item" onclick="goTo('clientes',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Clientes
+    </div>
     <div class="nav-item" onclick="goTo('devoluciones',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>Devoluciones
     </div>
@@ -370,6 +373,15 @@ input:focus, select:focus { border-color: var(--green); }
           <input type="hidden" id="venta-prod-id">
           <input type="hidden" id="venta-prod-nombre">
           <input type="hidden" id="venta-prod-costo">
+        </div>
+        <div>
+          <label>Cliente (opcional)</label>
+          <input id="venta-cliente-search" placeholder="Buscar cliente..." oninput="buscarClienteVenta()" autocomplete="off">
+          <input type="hidden" id="venta-cliente-id">
+          <input type="hidden" id="venta-cliente-nombre">
+          <div id="venta-cliente-nuevo" style="display:none;margin-top:6px">
+            <button class="btn btn-secondary btn-sm" onclick="crearClienteRapido()" type="button">+ Crear cliente nuevo</button>
+          </div>
         </div>
         <div><label>Cantidad</label><input id="venta-qty" type="number" value="1" min="1"></div>
         <div><label>Precio de Venta ($)</label><input id="venta-precio" type="number" value="0"></div>
@@ -878,6 +890,100 @@ input:focus, select:focus { border-color: var(--green); }
   </div>
 
 
+  <!-- CLIENTES -->
+  <div id="page-clientes" class="page">
+    <div class="page-title">Clientes</div>
+    <div class="page-sub">Historial, preferencias y datos de cada cliente</div>
+
+    <!-- CUMPLEAÑOS -->
+    <div id="cli-cumple-banner" style="display:none;background:var(--yellow-bg);border:1px solid var(--yellow);border-radius:var(--radius);padding:14px 20px;margin-bottom:20px;font-size:14px;color:var(--yellow);font-weight:600"></div>
+
+    <!-- CARDS -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
+      <div class="card"><div class="card-label">Total clientes</div><div class="card-value blue" id="cli-total">—</div><div class="card-sub">registrados</div></div>
+      <div class="card"><div class="card-label">Clientes VIP</div><div class="card-value" style="color:var(--purple)" id="cli-vip">—</div><div class="card-sub">más de 3 compras</div></div>
+      <div class="card"><div class="card-label">Recurrentes</div><div class="card-value green" id="cli-recurrentes">—</div><div class="card-sub">2+ compras</div></div>
+      <div class="card"><div class="card-label">Ticket promedio</div><div class="card-value yellow" id="cli-ticket">—</div><div class="card-sub">por cliente</div></div>
+    </div>
+
+    <!-- BARRA SUPERIOR -->
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+      <div style="position:relative;flex:1;min-width:200px">
+        <input id="cli-search" placeholder="Buscar por nombre, teléfono..." oninput="filtrarClientes()" style="padding-left:36px">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none">🔍</span>
+      </div>
+      <button class="btn btn-primary" onclick="abrirModalCliente()">+ Nuevo cliente</button>
+    </div>
+
+    <div class="filter-tabs" style="margin-bottom:20px">
+      <button class="filter-tab active" onclick="setCliFiltro('todos',this)">Todos</button>
+      <button class="filter-tab" onclick="setCliFiltro('vip',this)">⭐ VIP</button>
+      <button class="filter-tab" onclick="setCliFiltro('recurrente',this)">Recurrentes</button>
+      <button class="filter-tab" onclick="setCliFiltro('nuevo',this)">Nuevos</button>
+      <button class="filter-tab" onclick="setCliFiltro('inactivo',this)">Inactivos</button>
+    </div>
+
+    <!-- GRID -->
+    <div id="cli-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <div class="loading"><span class="spinner"></span>Cargando...</div>
+    </div>
+  </div>
+
+  <!-- PANEL DETALLE CLIENTE -->
+  <div id="cli-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:499" onclick="cerrarDetalleCliente()"></div>
+  <div id="cli-detalle-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:420px;background:var(--surface);border-left:1px solid var(--border);z-index:500;overflow-y:auto;padding:24px">
+    <button onclick="cerrarDetalleCliente()" style="position:absolute;top:16px;right:16px;background:var(--surface2);border:none;color:var(--text);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:var(--font);font-size:13px">✕ Cerrar</button>
+    <div id="cli-detalle-content" style="margin-top:32px"></div>
+  </div>
+
+  <!-- MODAL NUEVO CLIENTE -->
+  <div id="modal-cliente" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:680px;margin:20px;max-height:90vh;overflow-y:auto">
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:20px" id="modal-cliente-titulo">Nuevo cliente</h3>
+      <input type="hidden" id="mc-id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label>Nombre completo</label><input id="mc-nombre" placeholder="Juan García"></div>
+        <div><label>Teléfono / WhatsApp</label><input id="mc-tel" placeholder="351 123 4567"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label>Fecha de nacimiento</label><input id="mc-nacimiento" type="date"></div>
+        <div><label>Talle zapatillas</label><input id="mc-talle-zap" type="number" placeholder="41"></div>
+        <div><label>Talle ropa</label>
+          <select id="mc-talle-ropa">
+            <option value="">— Seleccionar —</option>
+            <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label>Ciudad</label><input id="mc-ciudad" placeholder="Laboulaye"></div>
+        <div><label>Cómo llegó</label>
+          <select id="mc-origen">
+            <option value="">— Seleccionar —</option>
+            <option>Recomendación</option><option>Instagram</option><option>Pasó por la calle</option>
+            <option>Facebook</option><option>WhatsApp</option><option>Otro</option>
+          </select>
+        </div>
+        <div><label>Estado</label>
+          <select id="mc-estado">
+            <option value="nuevo">Nuevo</option>
+            <option value="recurrente">Recurrente</option>
+            <option value="vip">VIP</option>
+            <option value="inactivo">Inactivo</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:20px">
+        <label>Nota libre</label>
+        <textarea id="mc-nota" placeholder="Le gustan las Nike, prefiere colores oscuros..." rows="2" style="resize:none;width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--font);font-size:14px;outline:none"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-secondary" onclick="cerrarModalCliente()">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarCliente()">Guardar cliente</button>
+      </div>
+    </div>
+  </div>
+
   <!-- DEUDORES -->
   <div id="page-deudores" class="page">
     <div class="page-title">Deudores / Fiado</div>
@@ -1076,6 +1182,7 @@ function goTo(page, el) {
   if (page === 'reposicion') cargarReposicion();
   if (page === 'analisis') cargarAnalisis();
   if (page === 'inteligencia') cargarInteligencia();
+  if (page === 'clientes') cargarClientes();
   if (page === 'devoluciones') cargarDevoluciones();
   if (page === 'deudores') cargarDeudores();
   if (page === 'movimientos') cargarMovimientos();
@@ -1349,6 +1456,7 @@ async function guardarEditar() {
 // VENTAS
 async function cargarVentas() {
   document.getElementById('venta-fecha').value = today();
+  if (!allClientes.length) allClientes = await sb('clientes?select=*') || [];
   if (!allProductos.length) allProductos = await sb('productos?select=*&order=modelo.asc') || [];
   const endpoint = esAdmin ? 'ventas?select=*&order=fecha.desc,registrado_en.desc' : 'ventas?select=*&order=fecha.desc,registrado_en.desc&sucursal=eq.' + currentSucursal;
   const data = await sb(endpoint);
@@ -1435,7 +1543,9 @@ async function registrarVenta() {
   const prodId = document.getElementById('venta-prod-id').value;
   if (!prodId) { toast('Seleccioná un producto', 'error'); return; }
   const qty = +document.getElementById('venta-qty').value||1, precio = +document.getElementById('venta-precio').value||0, costo = +document.getElementById('venta-prod-costo').value||0;
-  const venta = { id: crypto.randomUUID(), producto_id: prodId, producto_nombre: document.getElementById('venta-prod-nombre').value, qty, precio, total: precio*qty, costo, fecha: document.getElementById('venta-fecha').value, vendedor: document.getElementById('venta-vendedor').value, pago: document.getElementById('venta-pago').value, nota: document.getElementById('venta-nota').value, sucursal: currentSucursal, registrado_en: new Date().toISOString() };
+  const clienteId = document.getElementById('venta-cliente-id').value;
+  const clienteNombre = document.getElementById('venta-cliente-nombre').value;
+  const venta = { id: crypto.randomUUID(), producto_id: prodId, producto_nombre: document.getElementById('venta-prod-nombre').value, qty, precio, total: precio*qty, costo, fecha: document.getElementById('venta-fecha').value, vendedor: document.getElementById('venta-vendedor').value, pago: document.getElementById('venta-pago').value, nota: document.getElementById('venta-nota').value, sucursal: currentSucursal, cliente_id: clienteId||null, cliente_nombre: clienteNombre||null, registrado_en: new Date().toISOString() };
   await sb('ventas', { method: 'POST', body: venta, prefer: 'return=minimal' });
   const prod = allProductos.find(p => p.id === prodId);
   if (prod) { const ns = Math.max(0,(prod.stock||0)-qty); await sb('productos?id=eq.'+prodId, { method: 'PATCH', body: { stock: ns }, prefer: 'return=minimal' }); prod.stock = ns; }
@@ -1448,6 +1558,9 @@ async function registrarVenta() {
   document.getElementById('venta-qty').value = '1';
   document.getElementById('venta-precio').value = '0';
   document.getElementById('venta-nota').value = '';
+  document.getElementById('venta-cliente-search').value = '';
+  document.getElementById('venta-cliente-id').value = '';
+  document.getElementById('venta-cliente-nombre').value = '';
   cargarVentas();
 }
 
@@ -1926,6 +2039,265 @@ async function registrarDevolucion() {
   cargarDevoluciones();
 }
 
+
+
+// CLIENTES
+let allClientes = [];
+let cliFiltro = 'todos';
+
+const CLI_AVATAR_COLORS = ['var(--green-bg)','var(--blue-bg)','#2e1065','var(--yellow-bg)'];
+
+function getIniciales(nombre) { return (nombre||'').split(' ').slice(0,2).map(n=>n[0]||'').join('').toUpperCase(); }
+function getEdad(nac) {
+  if (!nac) return null;
+  const h = new Date(), n = new Date(nac);
+  let e = h.getFullYear()-n.getFullYear();
+  if (h.getMonth()<n.getMonth()||(h.getMonth()===n.getMonth()&&h.getDate()<n.getDate())) e--;
+  return e;
+}
+function esCumpleHoy(nac) {
+  if (!nac) return false;
+  const h = new Date(), n = new Date(nac);
+  return h.getMonth()===n.getMonth()&&h.getDate()===n.getDate();
+}
+function getCliEstado(c, comprasCliente) {
+  if (c.estado === 'vip' || comprasCliente.length >= 4) return { label:'⭐ VIP', bg:'#2e1065', color:'var(--purple)' };
+  if (c.estado === 'recurrente' || comprasCliente.length >= 2) return { label:'✓ Recurrente', bg:'var(--green-bg)', color:'var(--green)' };
+  if (c.estado === 'inactivo') return { label:'Inactivo', bg:'var(--surface2)', color:'var(--text3)' };
+  return { label:'🆕 Nuevo', bg:'var(--blue-bg)', color:'var(--blue)' };
+}
+
+async function cargarClientes() {
+  const suf = esAdmin ? '' : '&sucursal=eq.' + currentSucursal;
+  allClientes = await sb('clientes?select=*&order=registrado_en.desc' + suf) || [];
+  if (!allVentas.length) allVentas = await sb('ventas?select=*' + suf) || [];
+  renderCliStats();
+  filtrarClientes();
+}
+
+function getComprasCliente(clienteId) {
+  return allVentas.filter(v => v.cliente_id === clienteId);
+}
+
+function renderCliStats() {
+  const total = allClientes.length;
+  const vip = allClientes.filter(c => c.estado === 'vip' || getComprasCliente(c.id).length >= 4).length;
+  const rec = allClientes.filter(c => getComprasCliente(c.id).length >= 2).length;
+  const totalGastado = allClientes.reduce((s,c) => s+getComprasCliente(c.id).reduce((ss,v)=>ss+(v.total||0),0), 0);
+  const ticket = total > 0 ? totalGastado/total : 0;
+  document.getElementById('cli-total').textContent = total;
+  document.getElementById('cli-vip').textContent = vip;
+  document.getElementById('cli-recurrentes').textContent = rec;
+  document.getElementById('cli-ticket').textContent = fmt(ticket);
+
+  const cumpleHoy = allClientes.filter(c => esCumpleHoy(c.nacimiento));
+  const banner = document.getElementById('cli-cumple-banner');
+  if (cumpleHoy.length) {
+    banner.style.display = 'block';
+    banner.textContent = '🎂 Cumpleaños hoy: ' + cumpleHoy.map(c => c.nombre).join(', ');
+  } else banner.style.display = 'none';
+}
+
+function setCliFiltro(f, btn) {
+  cliFiltro = f;
+  document.querySelectorAll('#page-clientes .filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filtrarClientes();
+}
+
+function filtrarClientes() {
+  const q = (document.getElementById('cli-search')?.value || '').toLowerCase();
+  let lista = [...allClientes];
+  if (q) lista = lista.filter(c => (c.nombre||'').toLowerCase().includes(q) || (c.tel||'').includes(q));
+  if (cliFiltro === 'vip') lista = lista.filter(c => c.estado==='vip' || getComprasCliente(c.id).length>=4);
+  else if (cliFiltro === 'recurrente') lista = lista.filter(c => getComprasCliente(c.id).length>=2);
+  else if (cliFiltro === 'nuevo') lista = lista.filter(c => c.estado==='nuevo' && getComprasCliente(c.id).length<2);
+  else if (cliFiltro === 'inactivo') lista = lista.filter(c => c.estado==='inactivo');
+  renderClientes(lista);
+}
+
+function renderClientes(lista) {
+  const grid = document.getElementById('cli-grid');
+  if (!lista.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)">Sin clientes en esta categoría</div>'; return; }
+  grid.innerHTML = lista.map((c, i) => {
+    const compras = getComprasCliente(c.id);
+    const est = getCliEstado(c, compras);
+    const totalGastado = compras.reduce((s,v)=>s+(v.total||0),0);
+    const pagos = {};
+    compras.forEach(v => { pagos[v.pago] = (pagos[v.pago]||0)+1; });
+    const pagoFav = Object.entries(pagos).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
+    const edad = getEdad(c.nacimiento);
+    const cumple = esCumpleHoy(c.nacimiento);
+    return `<div style="background:var(--surface);border:1px solid ${est.color === 'var(--purple)' ? 'var(--purple)' : 'var(--border)'};border-radius:var(--radius);padding:20px;cursor:pointer;transition:border-color .2s" onclick="verDetalleCliente('${c.id}')" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='${est.color === 'var(--purple)' ? 'var(--purple)' : 'var(--border)'}'">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="width:44px;height:44px;border-radius:50%;background:${CLI_AVATAR_COLORS[i%4]};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700">${getIniciales(c.nombre)}${cumple?' 🎂':''}</div>
+        <span class="badge" style="background:${est.bg};color:${est.color}">${est.label}</span>
+      </div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">${c.nombre||''}</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px">${c.tel||''} · ${edad?edad+' años':''} · T${c.talle_zap||'?'} · ${c.talle_ropa||'?'} ropa</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px">${c.ciudad||''} · via ${c.origen||'—'}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:var(--surface2);border-radius:6px;padding:8px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Compras</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:var(--blue)">${compras.length}</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Total gastado</div><div style="font-size:13px;font-weight:700;font-family:var(--mono);color:var(--green)">${fmt(totalGastado)}</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Pago fav.</div><div style="font-size:12px;font-weight:600">${pagoFav}</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Última compra</div><div style="font-size:12px;font-weight:600;font-family:var(--mono)">${compras.length ? compras[0].fecha||'—' : '—'}</div></div>
+      </div>
+      ${c.nota ? `<div style="margin-top:10px;padding:8px;background:var(--surface2);border-radius:6px;font-size:12px;color:var(--text3)">📝 ${c.nota}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function verDetalleCliente(id) {
+  const c = allClientes.find(x => x.id === id);
+  if (!c) return;
+  const compras = getComprasCliente(id);
+  const est = getCliEstado(c, compras);
+  const totalGastado = compras.reduce((s,v)=>s+(v.total||0),0);
+  const pagos = {};
+  compras.forEach(v => { pagos[v.pago] = (pagos[v.pago]||0)+1; });
+  const pagoFav = Object.entries(pagos).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
+  const marcas = {};
+  compras.forEach(v => { const m = (v.producto_nombre||'').split(' ')[0]; if(m) marcas[m]=(marcas[m]||0)+1; });
+  const marcaFav = Object.entries(marcas).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
+  const edad = getEdad(c.nacimiento);
+
+  document.getElementById('cli-detalle-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <div style="width:56px;height:56px;border-radius:50%;background:var(--green-bg);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700">${getIniciales(c.nombre)}</div>
+      <div><div style="font-size:18px;font-weight:700">${c.nombre||''}</div><span class="badge" style="background:${est.bg};color:${est.color}">${est.label}</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <div style="background:var(--surface2);border-radius:8px;padding:12px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Teléfono</div><div style="font-size:13px;font-weight:600">${c.tel||'—'}</div></div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Edad</div><div style="font-size:13px;font-weight:600">${edad?edad+' años':'—'}</div></div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Talle zapatillas</div><div style="font-size:13px;font-weight:600">T${c.talle_zap||'—'}</div></div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Talle ropa</div><div style="font-size:13px;font-weight:600">${c.talle_ropa||'—'}</div></div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Ciudad</div><div style="font-size:13px;font-weight:600">${c.ciudad||'—'}</div></div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Cómo llegó</div><div style="font-size:13px;font-weight:600">${c.origen||'—'}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+      <div style="background:var(--green-bg);border-radius:8px;padding:12px;text-align:center"><div style="font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Total gastado</div><div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--green)">${fmt(totalGastado)}</div></div>
+      <div style="background:var(--blue-bg);border-radius:8px;padding:12px;text-align:center"><div style="font-size:10px;color:var(--blue);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Pago favorito</div><div style="font-size:15px;font-weight:700;color:var(--blue)">${pagoFav}</div></div>
+      <div style="background:#2e1065;border-radius:8px;padding:12px;text-align:center"><div style="font-size:10px;color:var(--purple);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Marca favorita</div><div style="font-size:15px;font-weight:700;color:var(--purple)">${marcaFav}</div></div>
+    </div>
+    ${c.nota?`<div style="background:var(--surface2);border-radius:8px;padding:14px;margin-bottom:16px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">📝 Nota</div><div style="font-size:13px;color:var(--text2)">${c.nota}</div></div>`:''}
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="btn btn-secondary btn-sm" onclick="editarCliente('${c.id}')">✏ Editar</button>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Historial de compras (${compras.length})</div>
+    ${compras.length ? compras.map(v=>`<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <strong style="font-size:13px">${v.producto_nombre||''}</strong>
+        <span style="font-family:var(--mono);color:var(--green);font-weight:700">${fmt(v.total)}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3)">${v.fecha||''} · <span class="badge badge-gray">${v.pago||''}</span></div>
+    </div>`).join('') : '<div style="color:var(--text3);font-size:13px;padding:12px">Sin compras registradas aún</div>'}`;
+
+  document.getElementById('cli-detalle-panel').style.display = 'block';
+  document.getElementById('cli-overlay').style.display = 'block';
+}
+
+function cerrarDetalleCliente() {
+  document.getElementById('cli-detalle-panel').style.display = 'none';
+  document.getElementById('cli-overlay').style.display = 'none';
+}
+
+function abrirModalCliente() {
+  document.getElementById('modal-cliente-titulo').textContent = 'Nuevo cliente';
+  document.getElementById('mc-id').value = '';
+  ['mc-nombre','mc-tel','mc-ciudad','mc-nota'].forEach(id => document.getElementById(id).value = '');
+  ['mc-nacimiento','mc-talle-zap'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('mc-talle-ropa').value = '';
+  document.getElementById('mc-origen').value = '';
+  document.getElementById('mc-estado').value = 'nuevo';
+  document.getElementById('modal-cliente').style.display = 'flex';
+}
+
+function editarCliente(id) {
+  const c = allClientes.find(x => x.id === id);
+  if (!c) return;
+  cerrarDetalleCliente();
+  document.getElementById('modal-cliente-titulo').textContent = 'Editar cliente';
+  document.getElementById('mc-id').value = c.id;
+  document.getElementById('mc-nombre').value = c.nombre||'';
+  document.getElementById('mc-tel').value = c.tel||'';
+  document.getElementById('mc-nacimiento').value = c.nacimiento||'';
+  document.getElementById('mc-talle-zap').value = c.talle_zap||'';
+  document.getElementById('mc-talle-ropa').value = c.talle_ropa||'';
+  document.getElementById('mc-ciudad').value = c.ciudad||'';
+  document.getElementById('mc-origen').value = c.origen||'';
+  document.getElementById('mc-estado').value = c.estado||'nuevo';
+  document.getElementById('mc-nota').value = c.nota||'';
+  document.getElementById('modal-cliente').style.display = 'flex';
+}
+
+function cerrarModalCliente() { document.getElementById('modal-cliente').style.display = 'none'; }
+
+async function guardarCliente() {
+  const nombre = document.getElementById('mc-nombre').value.trim();
+  if (!nombre) { toast('Ingresá el nombre', 'error'); return; }
+  const id = document.getElementById('mc-id').value;
+  const datos = {
+    nombre,
+    tel: document.getElementById('mc-tel').value.trim(),
+    nacimiento: document.getElementById('mc-nacimiento').value || null,
+    talle_zap: document.getElementById('mc-talle-zap').value,
+    talle_ropa: document.getElementById('mc-talle-ropa').value,
+    ciudad: document.getElementById('mc-ciudad').value.trim(),
+    origen: document.getElementById('mc-origen').value,
+    estado: document.getElementById('mc-estado').value,
+    nota: document.getElementById('mc-nota').value.trim(),
+    sucursal: currentSucursal
+  };
+  if (id) {
+    await sb('clientes?id=eq.'+id, { method: 'PATCH', body: datos, prefer: 'return=minimal' });
+    toast('Cliente actualizado ✓');
+  } else {
+    datos.id = crypto.randomUUID();
+    datos.registrado_en = new Date().toISOString();
+    await sb('clientes', { method: 'POST', body: datos, prefer: 'return=minimal' });
+    toast('Cliente guardado ✓');
+  }
+  cerrarModalCliente();
+  cargarClientes();
+}
+
+// BUSCAR CLIENTE EN VENTAS
+function buscarClienteVenta() {
+  const q = document.getElementById('venta-cliente-search').value;
+  const dd = document.getElementById('autocomplete-dropdown');
+  if (q.length < 2) { dd.style.display='none'; document.getElementById('venta-cliente-nuevo').style.display='none'; return; }
+  const matches = allClientes.filter(c => (c.nombre||'').toLowerCase().includes(q.toLowerCase()) || (c.tel||'').includes(q)).slice(0,8);
+  const inp = document.getElementById('venta-cliente-search');
+  const rect = inp.getBoundingClientRect();
+  dd.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+  dd.style.left = rect.left + 'px';
+  dd.style.width = rect.width + 'px';
+  dd.style.display = 'block';
+  document.getElementById('venta-cliente-nuevo').style.display = 'block';
+  dd.innerHTML = matches.map(c => `<div onclick="seleccionarClienteVenta('${c.id}','${(c.nombre||'').replace(/'/g,"&apos;")}')"
+    style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)"
+    onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+    <strong>${c.nombre}</strong> <span style="color:var(--text3);font-size:12px">${c.tel||''} · T${c.talle_zap||'?'}</span>
+  </div>`).join('') || '<div style="padding:10px 14px;color:var(--text3);font-size:13px">Sin resultados</div>';
+}
+
+function seleccionarClienteVenta(id, nombre) {
+  document.getElementById('venta-cliente-id').value = id;
+  document.getElementById('venta-cliente-nombre').value = nombre;
+  document.getElementById('venta-cliente-search').value = nombre;
+  document.getElementById('autocomplete-dropdown').style.display = 'none';
+  document.getElementById('venta-cliente-nuevo').style.display = 'none';
+}
+
+async function crearClienteRapido() {
+  const nombre = document.getElementById('venta-cliente-search').value.trim();
+  if (!nombre) return;
+  const nuevo = { id: crypto.randomUUID(), nombre, estado: 'nuevo', sucursal: currentSucursal, registrado_en: new Date().toISOString() };
+  await sb('clientes', { method: 'POST', body: nuevo, prefer: 'return=minimal' });
+  allClientes.unshift(nuevo);
+  seleccionarClienteVenta(nuevo.id, nombre);
+  toast('Cliente creado ✓');
+}
 
 // DEUDORES
 let allDeudores = [];
