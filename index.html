@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Santos Brother — Sistema de Gestión</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+
+<!-- Librerías externas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-screen">
+  <div class="login-box">
+    <div class="login-logo">SB Sistema</div>
+    <div class="login-title">Santos Brother</div>
+    <div><label>Email</label><input id="login-email" type="email" placeholder="tu@email.com" onkeydown="if(event.key==='Enter')loginSubmit()"></div>
+    <div><label>Contraseña</label><input id="login-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginSubmit()"></div>
+    <button class="login-btn" onclick="loginSubmit()" id="login-btn">Ingresar</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="label">SB Sistema</div>
+    <div class="name">Santos Brother</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Principal</div>
+    <div class="nav-item active" onclick="goTo('home',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Negocio Local</div>
+    <div class="nav-item" onclick="goTo('inventario',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>Inventario
+    </div>
+    <div class="nav-item" onclick="goTo('ventas',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>Registrar Venta
+    </div>
+    <div class="nav-item" onclick="goTo('gastos',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Gastos Fijos
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Análisis</div>
+    <div class="nav-item admin-only" onclick="goTo('inteligencia',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Inteligencia
+    </div>
+    <div class="nav-item admin-only" onclick="goTo('compras',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>Compras
+    </div>
+    <div class="nav-item" onclick="goTo('caja',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Caja
+    </div>
+    <div class="nav-item" onclick="goTo('clientes',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Clientes
+    </div>
+    <div class="nav-item" onclick="goTo('devoluciones',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>Devoluciones
+    </div>
+    <div class="nav-item" onclick="goTo('deudores',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Deudores
+    </div>
+    <div class="nav-item admin-only" onclick="goTo('movimientos',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Movimientos
+    </div>
+    <div class="nav-item admin-only" onclick="goTo('scanner',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h2v10H7zm4 0h2v10h-2zm4 0h2v10h-2z"/></svg>Escáner <span style="font-size:10px;background:var(--yellow-bg);color:var(--yellow);padding:2px 6px;border-radius:10px;margin-left:4px">DEMO</span>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="sidebar-user"><strong id="sidebar-email">—</strong>Santos Brother</div>
+    <div id="sucursal-badge" style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;margin:6px 0;"></div>
+    <button class="btn btn-secondary btn-sm" onclick="cerrarSesion()" style="width:100%;margin-top:6px">Cerrar sesión</button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- HOME -->
+  <div id="page-home" class="page active">
+    <div class="page-title">Home</div>
+    <div class="page-sub">Resumen general del negocio</div>
+
+    <!-- NOTIFICACION STOCK CRITICO -->
+    <div id="home-notif-banner" style="display:none;background:var(--red-bg);border:1px solid var(--red);border-radius:var(--radius);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:14px;color:var(--red);font-weight:600" id="home-notif-text"></div>
+        <div style="font-size:12px;color:#f87171;margin-top:2px" id="home-notif-sub"></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="goTo('inteligencia',document.querySelector('.nav-item.admin-only'))">Ver reposición →</button>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <div id="admin-sucursal-filter" style="display:none;align-items:center;gap:10px">
+        <span style="font-size:13px;color:var(--text2)">Sucursal:</span>
+        <div class="filter-tabs">
+          <button class="filter-tab active" onclick="setAdminSucursal('todas',this)">Todas</button>
+          <button class="filter-tab" onclick="setAdminSucursal('Laboulaye',this)">Laboulaye</button>
+          <button class="filter-tab" onclick="setAdminSucursal('Córdoba',this)">Córdoba</button>
+        </div>
+      </div>
+    </div>
+    <div class="cards">
+      <div class="card"><div class="card-label">Ventas Hoy</div><div class="card-value green" id="h-hoy">—</div><div class="card-sub" id="h-hoy-u">cargando...</div></div>
+      <div class="card"><div class="card-label">Ventas Este Mes</div><div class="card-value green" id="h-mes">—</div><div class="card-sub" id="h-mes-u">cargando...</div></div>
+      <div class="card"><div class="card-label">Gastos Este Mes</div><div class="card-value yellow" id="h-gastos">—</div><div class="card-sub">costos fijos</div></div>
+      <div class="card"><div class="card-label">Ganancia Neta Mes</div><div class="card-value" id="h-ganancia">—</div><div class="card-sub">ventas − costos − gastos</div></div>
+      <div class="card"><div class="card-label">Recuperación Recompra</div><div class="card-value blue" id="h-recuperacion">—</div><div class="card-sub">costo de lo vendido este mes</div></div>
+      <div class="card"><div class="card-label">Productos en Stock</div><div class="card-value blue" id="h-stock">—</div><div class="card-sub">unidades totales</div></div>
+      <div class="card"><div class="card-label">Alertas Reposición</div><div class="card-value red" id="h-alertas">—</div><div class="card-sub">stock bajo mínimo</div></div>
+      <div class="card"><div class="card-label">Productos Distintos</div><div class="card-value" id="h-productos">—</div><div class="card-sub">en inventario</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text2)">Facturación últimos 6 meses</h3>
+        <canvas id="chart-home-fact"></canvas>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text2)">Ganancia neta últimos 6 meses</h3>
+        <canvas id="chart-home-gan"></canvas>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header"><h3>Últimas ventas registradas</h3></div>
+      <table><thead><tr><th>Fecha</th><th>Producto</th><th>Talle</th><th>Color</th><th>Precio</th><th>Vendedor</th><th>Pago</th></tr></thead>
+      <tbody id="home-ventas"><tr><td colspan="7" class="loading"><span class="spinner"></span>Cargando...</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- INVENTARIO -->
+  <div id="page-inventario" class="page">
+    <div class="page-title">Inventario</div>
+    <div class="page-sub">Cargá y administrá tus productos</div>
+    <div class="form-box">
+      <h3>Agregar mercadería</h3>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+        <div><label>Modelo / Nombre</label><input id="inv-modelo" placeholder="DUNK LOW"></div>
+        <div><label>Marca</label><input id="inv-marca" placeholder="NIKE"></div>
+        <div><label>Color</label><input id="inv-color" placeholder="OLIVA"></div>
+        <div><label>Costo ($)</label><input id="inv-costo" type="number" value="0"></div>
+        <div><label>Precio ($)</label><input id="inv-precio" type="number" value="0"></div>
+        <div><label>Cant. por defecto</label><input id="inv-qty-default" type="number" value="1" min="1" oninput="aplicarInvQtyDefault()"></div>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <label style="margin-bottom:8px">Talles que llegaron — clickeá para seleccionar</label>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="invSelRango(34,40)">34 → 40</button>
+          <button class="btn btn-secondary btn-sm" onclick="invSelRango(36,42)">36 → 42</button>
+          <button class="btn btn-secondary btn-sm" onclick="invSelRango(38,44)">38 → 44</button>
+          <button class="btn btn-secondary btn-sm" onclick="invSelRango(34,45)">Todos</button>
+          <button class="btn btn-secondary btn-sm" onclick="invDeselTodos()">Limpiar</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px" id="inv-talles-grid"></div>
+      </div>
+
+      <div id="inv-resumen" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text2)">Resumen — productos a crear</div>
+        <div id="inv-resumen-items" style="font-size:13px"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-weight:700;font-size:13px">
+          <span>Total pares</span><span id="inv-resumen-total" style="font-family:var(--mono);color:var(--green)"></span>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-secondary" onclick="invPrevisualizar()">👁 Previsualizar</button>
+        <button class="btn btn-primary" id="inv-btn-guardar" style="display:none" onclick="guardarMercaderia()">✓ Guardar todos</button>
+        <span id="inv-guardando" style="display:none;color:var(--text3);font-size:13px">Guardando...</span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Stock actual <span id="inv-count" style="color:var(--text3);font-weight:400;font-size:13px"></span></h3>
+        <div class="right">
+          <div class="search-input"><input id="inv-search" placeholder="Buscar por modelo, marca, color, talle..." oninput="filtrarInventario()" style="width:320px"></div>
+        </div>
+      </div>
+      <table><thead><tr><th>Modelo</th><th>Marca</th><th>Color</th><th>Talle</th><th>Costo</th><th>Precio</th><th>Margen</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody id="inv-tbody"><tr><td colspan="10" class="loading"><span class="spinner"></span>Cargando...</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- VENTAS -->
+  <div id="page-ventas" class="page">
+    <div class="page-title">Registrar Venta</div>
+    <div class="page-sub">Cargá cada venta al momento de realizarla</div>
+    <div class="form-box">
+      <div class="form-grid cols3">
+        <div>
+          <label>Producto</label>
+          <input id="venta-prod-search" placeholder="Buscar producto..." oninput="buscarProductoVenta()" autocomplete="off">
+          <input type="hidden" id="venta-prod-id">
+          <input type="hidden" id="venta-prod-nombre">
+          <input type="hidden" id="venta-prod-costo">
+        </div>
+        <div>
+          <label>Cliente (opcional)</label>
+          <input id="venta-cliente-search" placeholder="Buscar cliente..." oninput="buscarClienteVenta()" autocomplete="off">
+          <input type="hidden" id="venta-cliente-id">
+          <input type="hidden" id="venta-cliente-nombre">
+          <div id="venta-cliente-nuevo" style="display:none;margin-top:6px">
+            <button class="btn btn-secondary btn-sm" onclick="crearClienteRapido()" type="button">+ Crear cliente nuevo</button>
+          </div>
+        </div>
+        <div><label>Cantidad</label><input id="venta-qty" type="number" value="1" min="1"></div>
+        <div><label>Precio de Venta ($)</label><input id="venta-precio" type="number" value="0"></div>
+        <div><label>Fecha</label><input id="venta-fecha" type="date"></div>
+        <div><label>Vendedor</label>
+          <select id="venta-vendedor"><option>Agustín</option><option>Santiago</option><option>Otro</option></select>
+        </div>
+        <div><label>Método de Pago</label>
+          <select id="venta-pago"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option><option>Mercado Pago</option></select>
+        </div>
+      </div>
+      <div style="margin-top:12px"><input id="venta-nota" placeholder="Notas (opcional)..."></div>
+      <div style="margin-top:12px"><button class="btn btn-primary" onclick="registrarVenta()">Registrar venta</button></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Historial de ventas</h3>
+        <div class="right">
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="setVentaFiltro('hoy',this)">Hoy</button>
+            <button class="filter-tab" onclick="setVentaFiltro('semana',this)">Semana</button>
+            <button class="filter-tab" onclick="setVentaFiltro('mes',this)">Este mes</button>
+            <button class="filter-tab" onclick="setVentaFiltro('anio',this)">Este año</button>
+            <button class="filter-tab" onclick="setVentaFiltro('todo',this)">Todo</button>
+          </div>
+          <select id="ventas-mes-select" onchange="setVentaFiltroMes(this.value)" style="width:150px">
+            <option value="">— Mes específico —</option>
+          </select>
+          <div class="search-input"><input id="ventas-search" placeholder="Buscar..." oninput="aplicarFiltroVentas()" style="width:180px"></div>
+          <button class="btn btn-secondary btn-sm" onclick="exportarVentasExcel()">📊 Excel</button>
+        </div>
+      </div>
+      <table><thead><tr><th>Fecha</th><th>Producto</th><th>Talle</th><th>Color</th><th>Qty</th><th>Precio</th><th>Total</th><th>Ganancia</th><th>Vendedor</th><th>Pago</th><th></th></tr></thead>
+      <tbody id="ventas-tbody"><tr><td colspan="11" class="loading"><span class="spinner"></span>Cargando...</td></tr></tbody></table>
+      <div id="ventas-totales" style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:24px;font-size:13px;color:var(--text2)"></div>
+    </div>
+  </div>
+
+  <!-- GASTOS -->
+  <div id="page-gastos" class="page">
+    <div class="page-title">Gastos Fijos</div>
+    <div class="page-sub">Registrá los costos del local por mes</div>
+    <div class="form-box">
+      <div class="form-grid cols3">
+        <div><label>Descripción</label><input id="gasto-desc" placeholder="Alquiler, luz, empleado..."></div>
+        <div><label>Monto ($)</label><input id="gasto-monto" type="number" value="0"></div>
+        <div><label>Mes</label><input id="gasto-mes" type="month"></div>
+      </div>
+      <div style="margin-top:12px"><button class="btn btn-primary" onclick="guardarGasto()">Guardar gasto</button></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Gastos registrados</h3>
+        <div class="right"><select id="gastos-mes-filter" onchange="filtrarGastos()" style="width:180px"><option value="">Todos los meses</option></select></div>
+      </div>
+      <table><thead><tr><th>Descripción</th><th>Mes</th><th>Monto</th><th></th></tr></thead>
+      <tbody id="gastos-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" class="page">
+    <div class="page-title">Dashboard</div>
+    <div class="page-sub">Métricas y gráficos de ventas</div>
+    <div class="filter-tabs" style="margin-bottom:20px">
+      <button class="filter-tab active" onclick="setDashFiltro('mes',this)">Este mes</button>
+      <button class="filter-tab" onclick="setDashFiltro('anio',this)">Este año</button>
+      <button class="filter-tab" onclick="setDashFiltro('todo',this)">Todo</button>
+    </div>
+    <div class="cards">
+      <div class="card"><div class="card-label">Facturación Bruta</div><div class="card-value green" id="d-bruta">—</div><div class="card-sub">total vendido</div></div>
+      <div class="card"><div class="card-label">Unidades Vendidas</div><div class="card-value blue" id="d-units">—</div><div class="card-sub">pares</div></div>
+      <div class="card"><div class="card-label">Margen de Ganancia</div><div class="card-value yellow" id="d-margen">—</div><div class="card-sub">(precio − costo) / precio</div></div>
+      <div class="card"><div class="card-label">Ganancia Neta</div><div class="card-value" id="d-neta">—</div><div class="card-sub">ventas − costos − gastos</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-box"><h3>Facturación bruta por mes</h3><canvas id="chart-facturacion"></canvas></div>
+      <div class="chart-box"><h3>Ganancia neta por mes</h3><canvas id="chart-ganancia"></canvas></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header"><h3>Productos más vendidos</h3><span style="color:var(--text3);font-size:12px">por unidades</span></div>
+      <table><thead><tr><th>#</th><th>Producto</th><th>Unidades</th><th>Total $</th><th>Ganancia $</th></tr></thead>
+      <tbody id="dash-top"></tbody></table>
+    </div>
+  </div>
+
+  <!-- REPOSICION -->
+  <div id="page-reposicion" class="page">
+    <div class="page-title">Reposición</div>
+    <div class="page-sub">Mínimo calculado según flujo real de ventas</div>
+    <div id="repo-urgente" class="repo-section"></div>
+    <div id="repo-prioridad" class="repo-section"></div>
+    <div id="repo-normal" class="repo-section"></div>
+    <div id="repo-loading" class="loading"><span class="spinner"></span>Calculando...</div>
+  </div>
+
+  <!-- ANALISIS -->
+  <div id="page-analisis" class="page">
+    <div class="page-title">Análisis</div>
+    <div class="page-sub">Talles sin rotación y concentración de ventas</div>
+    <div class="table-wrap">
+      <div class="table-header"><h3>Talles sin movimiento</h3></div>
+      <table><thead><tr><th>Modelo</th><th>Talle</th><th>Color</th><th>Stock</th><th>Días sin venta</th><th>Costo Inmov.</th></tr></thead>
+      <tbody id="anal-sinmov"></tbody></table>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Concentración de ventas del mes</h3>
+        <div class="right">
+          <select id="anal-mes" onchange="cargarConcentracion()" style="width:180px"></select>
+          <button class="btn btn-secondary btn-sm" onclick="exportarPDF()">📄 Exportar PDF</button>
+        </div>
+      </div>
+      <table><thead><tr><th>Modelo</th><th>Talle</th><th>Color</th><th>Unidades</th><th>Total $</th><th>Ganancia $</th><th>% del mes</th></tr></thead>
+      <tbody id="anal-concentracion"></tbody></table>
+    </div>
+  </div>
+
+  <!-- CAJA -->
+  <div id="page-caja" class="page">
+    <div class="page-title">Caja</div>
+    <div class="page-sub">Resumen diario de ventas y medios de pago</div>
+
+    <!-- Selector de fecha -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="setCajaFecha('hoy',this)">Hoy</button>
+        <button class="filter-tab" onclick="setCajaFecha('ayer',this)">Ayer</button>
+      </div>
+      <input type="date" id="caja-fecha-input" onchange="setCajaFechaManual(this.value)" style="width:180px">
+    </div>
+
+    <!-- Cards del día -->
+    <div class="cards" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
+      <div class="card"><div class="card-label">Total del día</div><div class="card-value green" id="caja-total">—</div><div class="card-sub" id="caja-fecha-label">—</div></div>
+      <div class="card"><div class="card-label">Cantidad de ventas</div><div class="card-value blue" id="caja-cantidad">—</div><div class="card-sub">transacciones</div></div>
+      <div class="card"><div class="card-label">Ganancia del día</div><div class="card-value" id="caja-ganancia">—</div><div class="card-sub">ventas − costos</div></div>
+      <div class="card"><div class="card-label">Ticket promedio</div><div class="card-value yellow" id="caja-ticket">—</div><div class="card-sub">por venta</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+      <!-- Desglose por medio de pago -->
+      <div class="table-wrap">
+        <div class="table-header"><h3>Desglose por medio de pago</h3></div>
+        <table>
+          <thead><tr><th>Medio de pago</th><th>Ventas</th><th>Total</th><th>%</th></tr></thead>
+          <tbody id="caja-pagos"></tbody>
+        </table>
+      </div>
+
+      <!-- Gráfico comparación días -->
+      <div class="chart-box" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text2)">Comparación últimos 14 días</h3>
+        <canvas id="chart-caja"></canvas>
+      </div>
+    </div>
+
+    <!-- Historial por día -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Historial acumulado por día</h3>
+        <div class="right">
+          <select id="caja-mes-filter" onchange="renderCajaHistorial()" style="width:180px">
+            <option value="">Todos los meses</option>
+          </select>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Ventas</th><th>Total</th><th>Ganancia</th><th>Efectivo</th><th>Transferencia</th><th>Débito</th><th>Crédito</th><th>Mercado Pago</th></tr></thead>
+        <tbody id="caja-historial"></tbody>
+      </table>
+      <div id="caja-historial-totales" style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:24px;font-size:13px;color:var(--text2)"></div>
+    </div>
+
+    <!-- Detalle ventas del día -->
+    <div class="table-wrap">
+      <div class="table-header"><h3 id="caja-detalle-titulo">Ventas del día</h3></div>
+      <table>
+        <thead><tr><th>Producto</th><th>Talle</th><th>Color</th><th>Precio</th><th>Ganancia</th><th>Vendedor</th><th>Pago</th></tr></thead>
+        <tbody id="caja-detalle"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- COMPRAS -->
+  <div id="page-compras" class="page">
+    <div class="page-title">Compras</div>
+    <div class="page-sub">Registrá cada compra y controlá tu presupuesto de recompra</div>
+
+    <!-- PRESUPUESTO BANNER -->
+    <div id="compras-presupuesto-banner" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:600;margin-bottom:6px">Presupuesto disponible este mes</div>
+          <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+            <div style="font-size:28px;font-weight:700;font-family:var(--mono);color:var(--green)" id="comp-presupuesto-disp">—</div>
+            <div style="font-size:13px;color:var(--text3)">de <span id="comp-presupuesto-total" style="color:var(--text2);font-family:var(--mono)">—</span> recuperación recompra</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:600;margin-bottom:6px">Ya compraste este mes</div>
+          <div style="font-size:24px;font-weight:700;font-family:var(--mono);color:var(--yellow)" id="comp-gastado">—</div>
+        </div>
+        <div style="width:100%">
+          <div style="background:var(--surface2);border-radius:4px;height:8px;overflow:hidden">
+            <div id="comp-barra-uso" style="height:100%;background:var(--green);border-radius:4px;transition:width .3s;width:0%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:4px">
+            <span id="comp-pct-uso">0% utilizado</span>
+            <span id="comp-alerta-texto"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+
+      <!-- FORMULARIO -->
+      <div class="form-box">
+        <h3>Registrar compra</h3>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div><label>Modelo</label><input id="comp-modelo" placeholder="DUNK LOW" oninput="compCalcuar()"></div>
+          <div><label>Marca</label><input id="comp-marca" placeholder="NIKE"></div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label>Fecha de compra</label>
+          <input id="comp-fecha" type="date">
+        </div>
+        <div style="margin-bottom:12px">
+          <label>Cantidad de pares</label>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div class="comp-qty-btn active" onclick="compSelQty(6,this)" style="flex:1;padding:8px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:2px solid var(--green);background:var(--green-bg);color:var(--green);font-family:var(--mono);text-align:center">x6</div>
+            <div class="comp-qty-btn" onclick="compSelQty(12,this)" style="flex:1;padding:8px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:var(--surface2);color:var(--text2);font-family:var(--mono);text-align:center">x12</div>
+            <div class="comp-qty-btn" onclick="compSelQty(0,this)" style="flex:1;padding:8px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:var(--surface2);color:var(--text2);font-family:var(--mono);text-align:center">Otro</div>
+          </div>
+          <input id="comp-qty" type="number" value="6" min="1" oninput="compCalcuar()">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+          <div><label>Precio/par (R$)</label><input id="comp-precio-real" type="number" placeholder="0" oninput="compCalcuar()"></div>
+          <div><label>Cotización R$→$AR</label><input id="comp-cotizacion" type="number" placeholder="Ej: 215" oninput="compCalcuar()"></div>
+          <div><label>Flete/par (R$)</label><input id="comp-flete" type="number" placeholder="0" oninput="compCalcuar()"></div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label>Notas (opcional)</label>
+          <input id="comp-notas" placeholder="Proveedor, condiciones...">
+        </div>
+
+        <!-- CALC PREVIEW -->
+        <div id="comp-calc" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px;font-size:13px">
+          <div style="font-weight:600;color:var(--text2);margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:1px">Resumen de costos</div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Costo par en $AR</span><span style="font-family:var(--mono);color:var(--yellow)" id="cc-par-ar">—</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Flete par en $AR</span><span style="font-family:var(--mono)" id="cc-flete-par">—</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Flete total</span><span style="font-family:var(--mono)" id="cc-flete-total">—</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-weight:700">Costo final por par</span><span style="font-family:var(--mono);color:var(--green);font-size:16px;font-weight:700" id="cc-costo-final">—</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="font-weight:700">Inversión total</span><span style="font-family:var(--mono);color:var(--green);font-weight:700" id="cc-inversion">—</span></div>
+          <div id="cc-alerta-modelo" style="margin-top:10px;display:none;padding:8px;border-radius:6px;font-size:12px"></div>
+          <div id="cc-alerta-presupuesto" style="margin-top:6px;display:none;padding:8px;border-radius:6px;font-size:12px"></div>
+        </div>
+
+        <button class="btn btn-primary" onclick="guardarCompra()" style="width:100%">Registrar compra</button>
+      </div>
+
+      <!-- RECOMENDACIONES -->
+      <div>
+        <div class="form-box" style="margin-bottom:16px">
+          <h3>🎯 Qué comprar esta semana</h3>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Basado en velocidad de ventas últimos 30 días</div>
+          <div id="comp-recomendaciones"><div class="loading"><span class="spinner"></span>Calculando...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Historial de compras</h3>
+        <div class="right">
+          <select id="comp-mes-filter" onchange="renderComprasHistorial()" style="width:180px">
+            <option value="">Todos los meses</option>
+          </select>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Modelo</th><th>Marca</th><th>Pares</th><th>Precio R$</th><th>Cotización</th><th>Flete/par R$</th><th>Costo/par $AR</th><th>Inversión total</th><th>vs Ventas</th><th></th></tr></thead>
+        <tbody id="comp-historial-tbody"><tr><td colspan="11" class="loading">Sin compras registradas</td></tr></tbody>
+      </table>
+      <div id="comp-historial-totales" style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:24px;font-size:13px;color:var(--text2)"></div>
+    </div>
+  </div>
+
+  <!-- INTELIGENCIA -->
+  <div id="page-inteligencia" class="page">
+    <div class="page-title">Inteligencia</div>
+    <div class="page-sub">Reposición, rotación, stock sin movimiento y recomendaciones de compra</div>
+
+    <div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:24px">
+      <button class="filter-tab active" id="itab-btn-repo" onclick="setIntelTab('repo',this)">🔴 Reposición</button>
+      <button class="filter-tab" id="itab-btn-rotacion" onclick="setIntelTab('rotacion',this)">📊 Rotación</button>
+      <button class="filter-tab" id="itab-btn-sinmov" onclick="setIntelTab('sinmov',this)">⚠ Sin movimiento</button>
+      <button class="filter-tab" id="itab-btn-recomendaciones" onclick="setIntelTab('recomendaciones',this)">🎯 Qué comprar</button>
+    </div>
+
+    <!-- REPOSICION -->
+    <div id="itab-repo">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
+        <div id="intel-urgente" class="repo-section"></div>
+        <div id="intel-prioridad" class="repo-section"></div>
+        <div id="intel-normal" class="repo-section"></div>
+      </div>
+      <div id="intel-repo-loading" class="loading"><span class="spinner"></span>Calculando...</div>
+    </div>
+
+    <!-- ROTACION -->
+    <div id="itab-rotacion" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+          <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text2)">Modelos con mayor rotación (30 días)</h3>
+          <canvas id="chart-rotacion"></canvas>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+          <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text2)">Ventas por marca</h3>
+          <canvas id="chart-marcas"></canvas>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><h3>Ranking de rotación</h3><button class="btn btn-secondary btn-sm" onclick="exportarRotacionExcel()">📊 Excel</button></div>
+        <table>
+          <thead><tr><th>#</th><th>Modelo</th><th>Vendidos 30d</th><th>Stock actual</th><th>Días de stock</th><th>Rotación</th></tr></thead>
+          <tbody id="intel-rotacion-tbody"><tr><td colspan="6" class="loading"><span class="spinner"></span>Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SIN MOVIMIENTO -->
+    <div id="itab-sinmov" style="display:none">
+      <div class="table-wrap">
+        <div class="table-header"><h3>Talles sin movimiento — en stock pero nunca vendidos</h3><button class="btn btn-secondary btn-sm" onclick="exportarSinMovExcel()">📊 Excel</button></div>
+        <table>
+          <thead><tr><th>Modelo</th><th>Talle</th><th>Color</th><th>Stock</th><th>Estado</th><th>Costo inmov.</th></tr></thead>
+          <tbody id="intel-sinmov-tbody"><tr><td colspan="6" class="loading"><span class="spinner"></span>Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- QUE COMPRAR -->
+    <div id="itab-recomendaciones" style="display:none">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px">
+        <div class="card"><div class="card-label">Presupuesto disponible</div><div class="card-value green" id="intel-presupuesto-disp">—</div><div class="card-sub">recuperación recompra del mes</div></div>
+        <div class="card"><div class="card-label">Modelos urgentes</div><div class="card-value red" id="intel-urgentes-count">—</div><div class="card-sub">sin stock</div></div>
+        <div class="card"><div class="card-label">Inversión sugerida</div><div class="card-value yellow" id="intel-inversion-sug">—</div><div class="card-sub">para cubrir urgentes</div></div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><h3>🎯 Recomendación de compra esta semana</h3></div>
+        <table>
+          <thead><tr><th>Modelo</th><th>Ventas/30d</th><th>Stock actual</th><th>Comprar sugerido</th><th>Prioridad</th></tr></thead>
+          <tbody id="intel-recom-tbody"><tr><td colspan="5" class="loading"><span class="spinner"></span>Calculando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEVOLUCIONES -->
+  <div id="page-devoluciones" class="page">
+    <div class="page-title">Devoluciones</div>
+    <div class="page-sub">Registrá devoluciones — el stock vuelve automáticamente al inventario</div>
+
+    <div class="form-box" style="margin-bottom:24px">
+      <h3>Registrar devolución</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div>
+          <label>Buscar producto</label>
+          <input id="dev-prod-search" placeholder="Buscar producto..." oninput="buscarProductoDevol()" autocomplete="off">
+          <input type="hidden" id="dev-prod-id">
+          <input type="hidden" id="dev-prod-nombre">
+        </div>
+        <div>
+          <label>Motivo</label>
+          <select id="dev-motivo">
+            <option>Talle incorrecto</option>
+            <option>Producto defectuoso</option>
+            <option>Cambio de opinión</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div>
+          <label>Fecha</label>
+          <input id="dev-fecha" type="date">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div>
+          <label>Tipo de resolución</label>
+          <select id="dev-tipo">
+            <option value="reintegro">Reintegro total</option>
+            <option value="parcial">Reintegro parcial</option>
+            <option value="cambio">Cambio por otro producto</option>
+            <option value="credito">Crédito en tienda</option>
+          </select>
+        </div>
+        <div>
+          <label>Monto reintegro ($)</label>
+          <input id="dev-monto" type="number" value="0">
+        </div>
+        <div>
+          <label>Cantidad de pares</label>
+          <input id="dev-qty" type="number" value="1" min="1">
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label>Notas</label>
+        <input id="dev-notas" placeholder="Observaciones adicionales...">
+      </div>
+      <button class="btn btn-primary" onclick="registrarDevolucion()">Registrar devolución</button>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header"><h3>Historial de devoluciones</h3></div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Producto</th><th>Motivo</th><th>Tipo</th><th>Reintegro</th><th>Stock</th></tr></thead>
+        <tbody id="dev-tbody"><tr><td colspan="6" class="loading"><span class="spinner"></span>Cargando...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MOVIMIENTOS -->
+  <div id="page-movimientos" class="page">
+    <div class="page-title">Movimientos de Stock</div>
+    <div class="page-sub">Historial completo de cada cambio de stock</div>
+
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Historial de movimientos</h3>
+        <div class="right">
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="setMovFiltro('todos',this)">Todos</button>
+            <button class="filter-tab" onclick="setMovFiltro('venta',this)">Ventas</button>
+            <button class="filter-tab" onclick="setMovFiltro('compra',this)">Compras</button>
+            <button class="filter-tab" onclick="setMovFiltro('devolucion',this)">Devoluciones</button>
+            <button class="filter-tab" onclick="setMovFiltro('ajuste',this)">Ajustes</button>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="exportarMovimientosExcel()">📊 Excel</button>
+        </div>
+      </div>
+      <tbody id="mov-tbody">
+        <div class="loading"><span class="spinner"></span>Cargando...</div>
+      </tbody>
+    </div>
+  </div>
+
+  <!-- SCANNER -->
+  <div id="page-scanner" class="page">
+    <div class="page-title">Escáner de Precios</div>
+    <div class="page-sub">Escaneá el código de barras con el lector para ver el precio — solo visible para el empleado</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <!-- ESCANEAR -->
+      <div>
+        <div class="form-box">
+          <h3>🔍 Escanear producto</h3>
+          <div style="margin-bottom:12px;font-size:13px;color:var(--text3)">Conectá el lector USB y escaneá, o ingresá el código manualmente</div>
+          <label>Código de barras</label>
+          <input id="scan-input" placeholder="Esperando escaneo..." style="font-family:var(--mono);font-size:16px;border-color:var(--green);background:var(--green-bg)" autofocus onkeydown="if(event.key==='Enter')procesarScan()">
+          <div style="margin-top:8px"><button class="btn btn-primary" onclick="procesarScan()" style="width:100%">Buscar precio</button></div>
+        </div>
+
+        <div id="scan-resultado" style="display:none">
+          <div class="form-box" id="scan-resultado-box">
+            <div style="text-align:center;padding:12px 0">
+              <div id="scan-nombre" style="font-size:20px;font-weight:700;margin-bottom:4px"></div>
+              <div id="scan-detalle" style="font-size:13px;color:var(--text3);margin-bottom:16px"></div>
+              <div id="scan-precio" style="font-size:48px;font-weight:700;font-family:var(--mono);color:var(--green)"></div>
+              <div id="scan-stock" style="font-size:13px;color:var(--text2);margin-top:8px"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DEMO chips -->
+        <div class="form-box">
+          <h3 style="margin-bottom:4px">Productos demo</h3>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Clickeá para simular un escaneo mientras no tenés el lector</div>
+          <div id="scan-chips"></div>
+        </div>
+      </div>
+
+      <!-- ETIQUETAS -->
+      <div>
+        <div class="form-box">
+          <h3>🏷️ Generar etiqueta</h3>
+          <div style="margin-bottom:12px;font-size:13px;color:var(--text3)">Buscá un producto del inventario para generar su etiqueta</div>
+          <label>Buscar producto</label>
+          <input id="etiq-search" placeholder="Modelo, marca, talle..." oninput="buscarParaEtiqueta()" style="margin-bottom:8px">
+          <div id="etiq-lista" style="max-height:200px;overflow-y:auto;margin-bottom:12px"></div>
+          <div id="etiq-preview" style="display:none">
+            <div style="background:#fff;color:#000;border-radius:8px;padding:14px;text-align:center;max-width:220px;margin:0 auto 12px">
+              <div id="etiq-marca-r" style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#666;font-family:var(--font)"></div>
+              <div id="etiq-modelo-r" style="font-size:14px;font-weight:700;color:#000;font-family:var(--font);margin:3px 0"></div>
+              <div id="etiq-detalle-r" style="font-size:11px;color:#555;font-family:var(--font);margin-bottom:6px"></div>
+              <svg id="etiq-barcode" style="max-width:100%"></svg>
+            </div>
+            <button class="btn btn-primary" onclick="imprimirEtiqueta()" style="width:100%">🖨️ Imprimir etiqueta</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- CLIENTES -->
+  <div id="page-clientes" class="page">
+    <div class="page-title">Clientes</div>
+    <div class="page-sub">Historial, preferencias y datos de cada cliente</div>
+
+    <!-- CUMPLEAÑOS -->
+    <div id="cli-cumple-banner" style="display:none;background:var(--yellow-bg);border:1px solid var(--yellow);border-radius:var(--radius);padding:14px 20px;margin-bottom:20px;font-size:14px;color:var(--yellow);font-weight:600"></div>
+
+    <!-- CARDS -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
+      <div class="card"><div class="card-label">Total clientes</div><div class="card-value blue" id="cli-total">—</div><div class="card-sub">registrados</div></div>
+      <div class="card"><div class="card-label">Clientes VIP</div><div class="card-value" style="color:var(--purple)" id="cli-vip">—</div><div class="card-sub">más de 3 compras</div></div>
+      <div class="card"><div class="card-label">Recurrentes</div><div class="card-value green" id="cli-recurrentes">—</div><div class="card-sub">2+ compras</div></div>
+      <div class="card"><div class="card-label">Ticket promedio</div><div class="card-value yellow" id="cli-ticket">—</div><div class="card-sub">por cliente</div></div>
+    </div>
+
+    <!-- BARRA SUPERIOR -->
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+      <div style="position:relative;flex:1;min-width:200px">
+        <input id="cli-search" placeholder="Buscar por nombre, teléfono..." oninput="filtrarClientes()" style="padding-left:36px">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none">🔍</span>
+      </div>
+      <button class="btn btn-primary" onclick="abrirModalCliente()">+ Nuevo cliente</button>
+    </div>
+
+    <div class="filter-tabs" style="margin-bottom:20px">
+      <button class="filter-tab active" onclick="setCliFiltro('todos',this)">Todos</button>
+      <button class="filter-tab" onclick="setCliFiltro('vip',this)">⭐ VIP</button>
+      <button class="filter-tab" onclick="setCliFiltro('recurrente',this)">Recurrentes</button>
+      <button class="filter-tab" onclick="setCliFiltro('nuevo',this)">Nuevos</button>
+      <button class="filter-tab" onclick="setCliFiltro('inactivo',this)">Inactivos</button>
+    </div>
+
+    <!-- GRID -->
+    <div id="cli-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <div class="loading"><span class="spinner"></span>Cargando...</div>
+    </div>
+  </div>
+
+  <!-- PANEL DETALLE CLIENTE -->
+  <div id="cli-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:499" onclick="cerrarDetalleCliente()"></div>
+  <div id="cli-detalle-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:420px;background:var(--surface);border-left:1px solid var(--border);z-index:500;overflow-y:auto;padding:24px">
+    <button onclick="cerrarDetalleCliente()" style="position:absolute;top:16px;right:16px;background:var(--surface2);border:none;color:var(--text);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:var(--font);font-size:13px">✕ Cerrar</button>
+    <div id="cli-detalle-content" style="margin-top:32px"></div>
+  </div>
+
+  <!-- MODAL NUEVO CLIENTE -->
+  <div id="modal-cliente" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:680px;margin:20px;max-height:90vh;overflow-y:auto">
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:20px" id="modal-cliente-titulo">Nuevo cliente</h3>
+      <input type="hidden" id="mc-id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label>Nombre completo</label><input id="mc-nombre" placeholder="Juan García"></div>
+        <div><label>Teléfono / WhatsApp</label><input id="mc-tel" placeholder="351 123 4567"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label>Fecha de nacimiento</label><input id="mc-nacimiento" type="date"></div>
+        <div><label>Talle zapatillas</label><input id="mc-talle-zap" type="number" placeholder="41"></div>
+        <div><label>Talle ropa</label>
+          <select id="mc-talle-ropa">
+            <option value="">— Seleccionar —</option>
+            <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label>Ciudad</label><input id="mc-ciudad" placeholder="Laboulaye"></div>
+        <div><label>Cómo llegó</label>
+          <select id="mc-origen">
+            <option value="">— Seleccionar —</option>
+            <option>Recomendación</option><option>Instagram</option><option>Pasó por la calle</option>
+            <option>Facebook</option><option>WhatsApp</option><option>Otro</option>
+          </select>
+        </div>
+        <div><label>Estado</label>
+          <select id="mc-estado">
+            <option value="nuevo">Nuevo</option>
+            <option value="recurrente">Recurrente</option>
+            <option value="vip">VIP</option>
+            <option value="inactivo">Inactivo</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:20px">
+        <label>Nota libre</label>
+        <textarea id="mc-nota" placeholder="Le gustan las Nike, prefiere colores oscuros..." rows="2" style="resize:none;width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--font);font-size:14px;outline:none"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-secondary" onclick="cerrarModalCliente()">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarCliente()">Guardar cliente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEUDORES -->
+  <div id="page-deudores" class="page">
+    <div class="page-title">Deudores / Fiado</div>
+    <div class="page-sub">Controlá lo que te deben y registrá cada pago parcial</div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+      <div class="card"><div class="card-label">Total adeudado</div><div class="card-value red" id="deu-total">—</div><div class="card-sub" id="deu-count">cargando...</div></div>
+      <div class="card"><div class="card-label">Cobrado este mes</div><div class="card-value green" id="deu-cobrado">—</div><div class="card-sub">pagos recibidos</div></div>
+      <div class="card"><div class="card-label">Deudas vencidas</div><div class="card-value yellow" id="deu-vencidas">—</div><div class="card-sub">más de 30 días</div></div>
+    </div>
+
+    <div class="form-box" style="margin-bottom:20px">
+      <h3>Registrar nueva deuda</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label>Nombre del cliente</label><input id="deu-nombre" placeholder="Juan García"></div>
+        <div><label>Producto / Concepto</label><input id="deu-producto" placeholder="DUNK LOW T41"></div>
+        <div><label>Monto total ($)</label><input id="deu-monto" type="number" placeholder="0"></div>
+        <div><label>Fecha</label><input id="deu-fecha" type="date"></div>
+      </div>
+      <div style="margin-bottom:12px"><label>Notas</label><input id="deu-notas" placeholder="Acuerdo de pago, cuotas..."></div>
+      <button class="btn btn-primary" onclick="agregarDeuda()">Registrar deuda</button>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
+      <span style="font-size:13px;color:var(--text2)">Mostrar:</span>
+      <div class="filter-tabs" id="deu-filtros">
+        <button class="filter-tab active" onclick="setDeuFiltro('todos',this)">Todos</button>
+        <button class="filter-tab" onclick="setDeuFiltro('pendiente',this)">Pendientes</button>
+        <button class="filter-tab" onclick="setDeuFiltro('vencido',this)">Vencidos</button>
+        <button class="filter-tab" onclick="setDeuFiltro('saldado',this)">Saldados</button>
+      </div>
+    </div>
+
+    <div id="deu-lista"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+  </div>
+
+</main>
+
+<!-- MODAL DEUDOR PAGO -->
+<div id="modal-deudor-pago" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:400px;margin:20px">
+    <h3 style="font-size:16px;font-weight:600;margin-bottom:20px">Registrar pago</h3>
+    <input type="hidden" id="dpago-id">
+    <div style="margin-bottom:12px"><label>Cliente</label><input id="dpago-nombre" disabled style="opacity:.6"></div>
+    <div style="margin-bottom:12px"><label>Deuda restante</label><input id="dpago-restante" disabled style="opacity:.6;font-family:var(--mono);color:var(--red)"></div>
+    <div style="margin-bottom:12px"><label>Monto que paga ($)</label><input id="dpago-monto" type="number" placeholder="0"></div>
+    <div style="margin-bottom:12px"><label>Fecha de pago</label><input id="dpago-fecha" type="date"></div>
+    <div style="margin-bottom:20px"><label>Notas</label><input id="dpago-notas" placeholder="Efectivo, transferencia..."></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="cerrarModalDeudor()">Cancelar</button>
+      <button class="btn btn-primary" onclick="registrarPagoDeudor()">Registrar pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR -->
+<div id="modal-editar" class="modal-overlay">
+  <div class="modal-box">
+    <h3>Editar producto</h3>
+    <input type="hidden" id="edit-id">
+    <div class="modal-grid3">
+      <div><label>Modelo</label><input id="edit-modelo"></div>
+      <div><label>Marca</label><input id="edit-marca"></div>
+      <div><label>Color</label><input id="edit-color"></div>
+    </div>
+    <div class="modal-grid4">
+      <div><label>Talle</label><input id="edit-talle"></div>
+      <div><label>Costo ($)</label><input id="edit-costo" type="number"></div>
+      <div><label>Precio ($)</label><input id="edit-precio" type="number"></div>
+      <div><label>Stock</label><input id="edit-stock" type="number"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarEditar()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEditar()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUTOCOMPLETE -->
+<div id="autocomplete-dropdown"></div>
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
+
+
+<!-- Scripts del sistema -->
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/home.js"></script>
+<script src="js/inventario.js"></script>
+<script src="js/ventas.js"></script>
+<script src="js/clientes.js"></script>
+<script src="js/gastos.js"></script>
+<script src="js/compras.js"></script>
+<script src="js/caja.js"></script>
+<script src="js/inteligencia.js"></script>
+<script src="js/devoluciones.js"></script>
+<script src="js/deudores.js"></script>
+<script src="js/movimientos.js"></script>
+<script src="js/scanner.js"></script>
+<script src="js/init.js"></script>
+
+</html>
