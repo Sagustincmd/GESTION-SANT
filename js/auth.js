@@ -1,6 +1,5 @@
 // auth.js — Autenticación y manejo de sucursales
 
-
 // SUCURSALES
 const USUARIOS_CORDOBA = ['joackoloza17@gmail.com'];
 let currentUser = null;
@@ -17,14 +16,6 @@ function sbEndpointConSucursal(endpoint) {
   return endpoint + sep + 'sucursal=eq.' + currentSucursal;
 }
 
-
-let invFiltrado = [], ventaFiltro = 'hoy', ventaMesEspecifico = '', dashFiltro = 'mes';
-let adminSucursalFiltro = 'todas';
-let chartFact = null, chartGan = null;
-
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.className = `toast ${type} show`;
-  setTimeout(() => el.className = 'toast', 3000);
 }
 
 // AUTH

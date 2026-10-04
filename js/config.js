@@ -36,9 +36,6 @@ function toast(msg, type='success') {
   setTimeout(() => el.className = 'toast', 3000);
 }
 
-// Variables adicionales globales
-let allDeudores = [];
-let allDeudoresPagos = [];
 let intelTabActual = 'repo';
 let rotacionChartsInit = false;
 let homeChartsInit = false;
