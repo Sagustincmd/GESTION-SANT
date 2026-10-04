@@ -139,3 +139,37 @@ function exportarSinMovExcel() {
 function exportarMovimientosExcel() {
   toast('Excel descargado ✓');
 }
+
+// OCULTAR MONTOS
+let montosOcultos = false;
+
+function toggleMontos() {
+  montosOcultos = !montosOcultos;
+  const icon = document.getElementById('ocultar-icon');
+  const label = document.getElementById('ocultar-label');
+  icon.textContent = montosOcultos ? '🙈' : '👁';
+  label.textContent = montosOcultos ? 'Mostrar montos' : 'Ocultar montos';
+
+  const ids = ['h-hoy','h-mes','h-gastos','h-ganancia','h-recuperacion','h-stock','h-alertas','h-productos'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (montosOcultos) {
+      el.dataset.original = el.textContent;
+      el.textContent = '••••••';
+    } else {
+      if (el.dataset.original) el.textContent = el.dataset.original;
+    }
+  });
+
+  // Ocultar también últimas ventas
+  const ventas = document.querySelectorAll('#home-ventas td.mono');
+  ventas.forEach(td => {
+    if (montosOcultos) {
+      td.dataset.original = td.textContent;
+      td.textContent = '••••';
+    } else {
+      if (td.dataset.original) td.textContent = td.dataset.original;
+    }
+  });
+}

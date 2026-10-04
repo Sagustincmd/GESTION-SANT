@@ -90,7 +90,12 @@
 
   <!-- HOME -->
   <div id="page-home" class="page active">
-    <div class="page-title">Home</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="page-title">Home</div>
+      <button id="btn-ocultar" onclick="toggleMontos()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;color:var(--text2);font-family:var(--font);display:flex;align-items:center;gap:6px">
+        <span id="ocultar-icon">👁</span> <span id="ocultar-label">Ocultar montos</span>
+      </button>
+    </div>
     <div class="page-sub">Resumen general del negocio</div>
 
     <!-- NOTIFICACION STOCK CRITICO -->
@@ -658,7 +663,6 @@
         </div>
       </div>
       <tbody id="mov-tbody">
-        <div class="loading"><span class="spinner"></span>Cargando...</div>
       </tbody>
     </div>
   </div>
