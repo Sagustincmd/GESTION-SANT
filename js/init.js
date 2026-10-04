@@ -1,4 +1,4 @@
-// init.js — Inicialización de la aplicación
+// init.js — Inicialización
 
 window.addEventListener('load', async () => {
   const { data } = await sbClient.auth.getSession();

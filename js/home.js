@@ -1,5 +1,6 @@
 // home.js — Dashboard principal
 
+// HOME
 function setAdminSucursal(suc, btn) {
   adminSucursalFiltro = suc;
   document.querySelectorAll('#admin-sucursal-filter .filter-tab').forEach(b => b.classList.remove('active'));
@@ -59,8 +60,7 @@ async function cargarHome() {
     <td><span class="badge badge-gray">${v.pago||''}</span></td></tr>`).join('');
 }
 
-// INVENTARIO
-let homeChartsInit = false;
+// HOME CHARTS
 async function initHomeCharts() {
   if (homeChartsInit) return;
   homeChartsInit = true;
@@ -139,6 +139,3 @@ function exportarSinMovExcel() {
 function exportarMovimientosExcel() {
   toast('Excel descargado ✓');
 }
-
-// INTELIGENCIA
-let intelTabActual = 'repo';

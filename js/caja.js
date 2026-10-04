@@ -1,7 +1,6 @@
-// caja.js — Resumen diario de caja
+// caja.js — Caja diaria
 
-let cajaFechaActual = '';
-let chartCaja = null;
+// CAJA
 
 async function cargarCaja() {
   cajaFechaActual = today();
@@ -169,5 +168,3 @@ function renderCajaGrafico() {
     }
   });
 }
-
-// SCANNER

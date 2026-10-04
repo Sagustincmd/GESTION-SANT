@@ -1,6 +1,6 @@
-// scanner.js — Escáner de códigos y generador de etiquetas
+// scanner.js — Escáner y etiquetas
 
-let scannerProductos = [];
+// SCANNER
 
 async function cargarScanner() {
   if (!allProductos.length) allProductos = await sb('productos?select=*') || [];
@@ -21,7 +21,6 @@ function simularScan(codigo) {
   procesarScan();
 }
 
-let scanTimer = null;
 document.addEventListener('input', e => {
   if (e.target.id === 'scan-input') {
     clearTimeout(scanTimer);
@@ -120,4 +119,3 @@ function imprimirEtiqueta() {
   w.document.close();
   setTimeout(() => w.print(), 400);
 }
-

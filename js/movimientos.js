@@ -1,5 +1,6 @@
-// movimientos.js — Historial de movimientos de stock
+// movimientos.js — Historial de stock
 
+// MOVIMIENTOS
 async function registrarMovimiento(productoId, productoNombre, tipo, qty, referenciaId, notas) {
   const mov = {
     id: crypto.randomUUID(),
@@ -16,7 +17,6 @@ async function registrarMovimiento(productoId, productoNombre, tipo, qty, refere
   await sb('movimientos', { method: 'POST', body: mov, prefer: 'return=minimal' });
 }
 
-let movFiltro = 'todos';
 async function cargarMovimientos() {
   const data = await sb('movimientos?select=*&order=registrado_en.desc') || [];
   renderMovimientos(data);
@@ -45,5 +45,3 @@ function renderMovimientos(data) {
       <div style="font-family:var(--mono);font-weight:700;color:${m.tipo==='venta'?'var(--red)':'var(--green)'}">${m.tipo==='venta'?'−':'+'}${Math.abs(m.qty||1)}</div>
     </div>`).join('');
 }
-
-// COMPRAS

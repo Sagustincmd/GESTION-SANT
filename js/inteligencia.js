@@ -1,5 +1,45 @@
-// inteligencia.js — Reposición, rotación, análisis y recomendaciones
+// inteligencia.js — Reposición, análisis y recomendaciones
 
+// DASHBOARD
+async function cargarDashboard() {
+  if (!allVentas.length) allVentas = await sb('ventas?select=*') || [];
+  if (!allGastos.length) allGastos = await sb('gastos?select=*') || [];
+  renderDashboard();
+}
+
+function setDashFiltro(f, btn) {
+  dashFiltro = f;
+  document.querySelectorAll('#page-dashboard .filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active'); renderDashboard();
+}
+
+function renderDashboard() {
+  const mes = thisMonth(), anio = String(new Date().getFullYear());
+  let ventas = [...allVentas], gastos = [...allGastos];
+  if (dashFiltro === 'mes') { ventas = ventas.filter(v => v.fecha && v.fecha.startsWith(mes)); gastos = gastos.filter(g => g.mes && g.mes.startsWith(mes)); }
+  else if (dashFiltro === 'anio') { ventas = ventas.filter(v => v.fecha && v.fecha.startsWith(anio)); gastos = gastos.filter(g => g.mes && g.mes.startsWith(anio)); }
+  const bruta = ventas.reduce((s,v)=>s+(v.total||0),0), costos = ventas.reduce((s,v)=>s+(v.costo||0)*(v.qty||1),0), units = ventas.reduce((s,v)=>s+(v.qty||1),0);
+  const gastoTotal = gastos.reduce((s,g)=>s+(g.monto||0),0), neta = bruta-costos-gastoTotal, margen = bruta>0?Math.round((bruta-costos)/bruta*100):0;
+  document.getElementById('d-bruta').textContent = fmt(bruta);
+  document.getElementById('d-units').textContent = fmtN(units);
+  document.getElementById('d-margen').textContent = margen + '%';
+  const netaEl = document.getElementById('d-neta'); netaEl.textContent = fmt(neta); netaEl.className = 'card-value ' + (neta>=0?'green':'red');
+  const mesesData = {};
+  allVentas.forEach(v => { if (!v.fecha) return; const m = v.fecha.substring(0,7); if (!mesesData[m]) mesesData[m]={bruta:0,costos:0,gastos:0}; mesesData[m].bruta+=v.total||0; mesesData[m].costos+=(v.costo||0)*(v.qty||1); });
+  allGastos.forEach(g => { if (!g.mes) return; const m = g.mes.substring(0,7); if (!mesesData[m]) mesesData[m]={bruta:0,costos:0,gastos:0}; mesesData[m].gastos+=g.monto||0; });
+  const labels = Object.keys(mesesData).sort().slice(-6);
+  const brutaData = labels.map(m => mesesData[m].bruta);
+  const netaData = labels.map(m => mesesData[m].bruta - mesesData[m].costos - mesesData[m].gastos);
+  if (chartFact) chartFact.destroy(); if (chartGan) chartGan.destroy();
+  const cfg = { responsive:true, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#71717a'},grid:{color:'#2a2a2a'}},y:{ticks:{color:'#71717a',callback:v=>'$'+(v/1000).toFixed(0)+'k'},grid:{color:'#2a2a2a'}}} };
+  chartFact = new Chart(document.getElementById('chart-facturacion'), { type:'line', data:{labels, datasets:[{data:brutaData, borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,.1)', fill:true, tension:.4}]}, options:cfg });
+  chartGan = new Chart(document.getElementById('chart-ganancia'), { type:'line', data:{labels, datasets:[{data:netaData, borderColor:'#60a5fa', backgroundColor:'rgba(96,165,250,.1)', fill:true, tension:.4}]}, options:cfg });
+  const topMap = {};
+  ventas.forEach(v => { const k = v.producto_nombre||'Sin nombre'; if (!topMap[k]) topMap[k]={units:0,total:0,ganancia:0}; topMap[k].units+=v.qty||1; topMap[k].total+=v.total||0; topMap[k].ganancia+=(v.total||0)-(v.costo||0)*(v.qty||1); });
+  document.getElementById('dash-top').innerHTML = Object.entries(topMap).sort((a,b)=>b[1].units-a[1].units).slice(0,10).map(([n,d],i) => `<tr><td class="mono" style="color:var(--text3)">${i+1}</td><td><strong>${n}</strong></td><td class="mono">${d.units}</td><td class="mono green">${fmt(d.total)}</td><td class="mono ${d.ganancia>=0?'green':'red'}">${fmt(d.ganancia)}</td></tr>`).join('');
+}
+
+// REPOSICION
 async function cargarReposicion() {
   document.getElementById('repo-loading').style.display = 'block';
   ['repo-urgente','repo-prioridad','repo-normal'].forEach(id => document.getElementById(id).innerHTML = '');
@@ -72,7 +112,7 @@ function exportarPDF() {
 
 
 
-// HOME CHARTS
+// INTELIGENCIA
 
 function setIntelTab(tab, btn) {
   intelTabActual = tab;
@@ -221,5 +261,3 @@ function renderRecomendaciones() {
   }).join('');
   document.getElementById('intel-inversion-sug').textContent = fmt(invSug);
 }
-
-// DEVOLUCIONES

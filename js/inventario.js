@@ -1,5 +1,6 @@
-// inventario.js — Gestión de inventario y productos
+// inventario.js — Gestión de inventario
 
+// INVENTARIO
 async function cargarInventario() {
   initInvTalles();
   const endpoint = esAdmin ? 'productos?select=*&order=modelo.asc' : 'productos?select=*&order=modelo.asc&sucursal=eq.' + currentSucursal;
@@ -44,7 +45,6 @@ function renderInventario() {
 }
 
 // CARGA MASIVA
-const INV_TALLES = [34,35,36,37,38,39,40,41,42,43,44,45];
 
 function initInvTalles() {
   const grid = document.getElementById('inv-talles-grid');
@@ -197,5 +197,3 @@ async function guardarEditar() {
   cerrarEditar();
   cargarInventario();
 }
-
-// VENTAS

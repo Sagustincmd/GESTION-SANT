@@ -1,7 +1,6 @@
-// compras.js — Gestión de compras y presupuesto
+// compras.js — Compras y presupuesto
 
-let todasCompras = [];
-let compPresupuesto = 0;
+// COMPRAS
 
 async function cargarCompras() {
   // Cargar datos necesarios
@@ -284,5 +283,3 @@ function renderRecomendaciones() {
     </div>`;
   }).join('');
 }
-
-// CAJA

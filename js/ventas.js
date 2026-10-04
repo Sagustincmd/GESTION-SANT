@@ -1,5 +1,6 @@
 // ventas.js — Registro y gestión de ventas
 
+// VENTAS
 async function cargarVentas() {
   document.getElementById('venta-fecha').value = today();
   if (!allClientes.length) allClientes = await sb('clientes?select=*') || [];
@@ -116,7 +117,7 @@ async function eliminarVenta(id) {
   toast('Venta eliminada'); cargarVentas();
 }
 
-// GASTOS
+// BUSCAR CLIENTE EN VENTAS
 function buscarClienteVenta() {
   const q = document.getElementById('venta-cliente-search').value;
   const dd = document.getElementById('autocomplete-dropdown');
@@ -153,5 +154,3 @@ async function crearClienteRapido() {
   seleccionarClienteVenta(nuevo.id, nombre);
   toast('Cliente creado ✓');
 }
-
-// DEUDORES

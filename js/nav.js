@@ -1,5 +1,6 @@
-// nav.js — Navegación entre páginas
+// nav.js — Navegación
 
+// NAV
 function goTo(page, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -24,5 +25,3 @@ function goTo(page, el) {
 
 function getProdTalle(id) { const p = allProductos.find(x => x.id === id); return p ? p.talle||'' : ''; }
 function getProdColor(id) { const p = allProductos.find(x => x.id === id); return p ? p.color||'' : ''; }
-
-// HOME

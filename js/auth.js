@@ -1,22 +1,19 @@
-// auth.js — Autenticación y manejo de sucursales
+// auth.js — Autenticación y sucursales
 
 // SUCURSALES
-const USUARIOS_CORDOBA = ['joackoloza17@gmail.com'];
-let currentUser = null;
-let currentSucursal = 'Laboulaye'; // default
-let esAdmin = true;
 
-function getSucursalFiltro() {
-  return esAdmin ? null : currentSucursal;
-}
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': opts.prefer || '', ...opts.headers },
+    method: opts.method || 'GET',
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  if (!res.ok) throw new Error(await res.text());
+  if (opts.method === 'DELETE' || opts.prefer === 'return=minimal') return null;
+  const ct = res.headers.get('content-type') || '';
+  return ct.includes('json') ? res.json() : null;
+};
 
-function sbEndpointConSucursal(endpoint) {
-  if (esAdmin) return endpoint;
-  const sep = endpoint.includes('?') ? '&' : '?';
-  return endpoint + sep + 'sucursal=eq.' + currentSucursal;
-}
 
-}
 
 // AUTH
 async function loginSubmit() {
@@ -68,5 +65,3 @@ async function cerrarSesion() {
   document.getElementById('login-email').value = '';
   document.getElementById('login-pass').value = '';
 }
-
-// NAV

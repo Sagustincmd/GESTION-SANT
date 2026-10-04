@@ -1,6 +1,6 @@
-// deudores.js — Gestión de deudores y fiado
+// deudores.js — Deudores y fiado
 
-let deuFiltro = 'todos';
+// DEUDORES
 
 async function cargarDeudores() {
   document.getElementById('deu-fecha').value = today();
@@ -153,5 +153,3 @@ async function eliminarDeudor(id) {
   toast('Deudor eliminado');
   cargarDeudores();
 }
-
-// MOVIMIENTOS

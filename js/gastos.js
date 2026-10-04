@@ -1,5 +1,6 @@
 // gastos.js — Gastos fijos
 
+// GASTOS
 async function cargarGastos() {
   const endpoint = esAdmin ? 'gastos?select=*&order=mes.desc,creado_en.desc' : 'gastos?select=*&order=mes.desc,creado_en.desc&sucursal=eq.' + currentSucursal;
   const data = await sb(endpoint);
@@ -33,5 +34,3 @@ async function eliminarGasto(id) {
   await sb('gastos?id=eq.'+id, { method: 'DELETE' });
   toast('Gasto eliminado'); cargarGastos();
 }
-
-// DASHBOARD

@@ -1,5 +1,6 @@
-// devoluciones.js — Gestión de devoluciones
+// devoluciones.js — Devoluciones
 
+// DEVOLUCIONES
 function buscarProductoDevol() {
   const q = document.getElementById('dev-prod-search').value;
   const dd = document.getElementById('autocomplete-dropdown');
@@ -89,5 +90,3 @@ async function registrarDevolucion() {
 }
 
 
-
-// CLIENTES

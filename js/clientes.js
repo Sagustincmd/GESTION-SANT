@@ -1,8 +1,7 @@
 // clientes.js — CRM de clientes
 
-let cliFiltro = 'todos';
+// CLIENTES
 
-const CLI_AVATAR_COLORS = ['var(--green-bg)','var(--blue-bg)','#2e1065','var(--yellow-bg)'];
 
 function getIniciales(nombre) { return (nombre||'').split(' ').slice(0,2).map(n=>n[0]||'').join('').toUpperCase(); }
 function getEdad(nac) {
@@ -217,5 +216,3 @@ async function guardarCliente() {
   cerrarModalCliente();
   cargarClientes();
 }
-
-// BUSCAR CLIENTE EN VENTAS
