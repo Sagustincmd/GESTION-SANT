@@ -1,7 +1,5 @@
 // auth.js — Autenticación y manejo de sucursales
 
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbGd4c2ZxZnlza3ZxYW14dHFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzQ5NzgsImV4cCI6MjA5NTk1MDk3OH0.BfGBbcOLgPMeO1U8tR7mUO3Vfr0AoqCURE9CjYlxud8";
-const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // SUCURSALES
 const USUARIOS_CORDOBA = ['joackoloza17@gmail.com'];
@@ -19,7 +17,6 @@ function sbEndpointConSucursal(endpoint) {
   return endpoint + sep + 'sucursal=eq.' + currentSucursal;
 }
 
-const sb = async (endpoint, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': opts.prefer || '', ...opts.headers },
     method: opts.method || 'GET',
@@ -31,17 +28,11 @@ const sb = async (endpoint, opts = {}) => {
   return ct.includes('json') ? res.json() : null;
 };
 
-const fmt = n => '$' + Math.round(n || 0).toLocaleString('es-AR');
-const fmtN = n => Math.round(n || 0).toLocaleString('es-AR');
-const today = () => new Date().toISOString().split('T')[0];
-const thisMonth = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; };
 
-let allProductos = [], allVentas = [], allGastos = [];
 let invFiltrado = [], ventaFiltro = 'hoy', ventaMesEspecifico = '', dashFiltro = 'mes';
 let adminSucursalFiltro = 'todas';
 let chartFact = null, chartGan = null;
 
-function toast(msg, type='success') {
   const el = document.getElementById('toast');
   el.textContent = msg; el.className = `toast ${type} show`;
   setTimeout(() => el.className = 'toast', 3000);

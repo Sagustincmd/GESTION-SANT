@@ -1,6 +1,5 @@
 // clientes.js — CRM de clientes
 
-let allClientes = [];
 let cliFiltro = 'todos';
 
 const CLI_AVATAR_COLORS = ['var(--green-bg)','var(--blue-bg)','#2e1065','var(--yellow-bg)'];

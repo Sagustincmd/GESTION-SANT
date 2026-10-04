@@ -35,3 +35,20 @@ function toast(msg, type='success') {
   el.textContent = msg; el.className = `toast ${type} show`;
   setTimeout(() => el.className = 'toast', 3000);
 }
+
+// Variables adicionales globales
+let allDeudores = [];
+let allDeudoresPagos = [];
+let intelTabActual = 'repo';
+let rotacionChartsInit = false;
+let homeChartsInit = false;
+let chartFact = null, chartGan = null;
+let chartCaja = null;
+let cajaFechaActual = '';
+let todasCompras = [];
+let compPresupuesto = 0;
+let deuFiltro = 'todos';
+let cliFiltro = 'todos';
+let movFiltro = 'todos';
+let scannerProductos = [];
+const CLI_AVATAR_COLORS = ['var(--green-bg)','var(--blue-bg)','#2e1065','var(--yellow-bg)'];

@@ -1,7 +1,5 @@
 // deudores.js — Gestión de deudores y fiado
 
-let allDeudores = [];
-let allDeudoresPagos = [];
 let deuFiltro = 'todos';
 
 async function cargarDeudores() {

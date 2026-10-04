@@ -121,8 +121,3 @@ function imprimirEtiqueta() {
   setTimeout(() => w.print(), 400);
 }
 
-// INIT
-window.addEventListener('load', async () => {
-  const { data } = await sbClient.auth.getSession();
-  if (data.session) mostrarApp(data.session.user);
-});

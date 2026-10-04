@@ -73,8 +73,6 @@ function exportarPDF() {
 
 
 // HOME CHARTS
-let intelTabActual = 'repo';
-let rotacionChartsInit = false;
 
 function setIntelTab(tab, btn) {
   intelTabActual = tab;
