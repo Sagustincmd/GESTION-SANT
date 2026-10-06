@@ -21,6 +21,7 @@ function goTo(page, el) {
   if (page === 'compras') cargarCompras();
   if (page === 'caja') cargarCaja();
   if (page === 'scanner') cargarScanner();
+  if (page === 'bandeja') cargarBandeja();
 }
 
 function getProdTalle(id) { const p = allProductos.find(x => x.id === id); return p ? p.talle||'' : ''; }

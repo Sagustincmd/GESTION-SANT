@@ -169,3 +169,50 @@ input:focus, select:focus { border-color: var(--green); }
 .inv-talle-card.selected .t-qty { display: block; }
 .inv-talle-card input[type=number] { width: 100%; text-align: center; padding: 3px; font-size: 12px; font-family: var(--mono); background: var(--surface); border: 1px solid var(--border); border-radius: 4px; color: var(--text); }
 .inv-talle-card input[type=number]:focus { border-color: var(--green); outline: none; }
+
+/* BANDEJA DEL AGENTE */
+.nav-count { margin-left: auto; background: var(--yellow); color: #000; font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-block; text-align: center; line-height: 20px; font-family: var(--mono); }
+.bj-barra { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.bj-barra-der { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.bj-filtros { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); padding: 4px; border-radius: 10px; }
+.bj-filtros button { border: 0; background: transparent; color: var(--text2); font-family: var(--font); font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 7px; cursor: pointer; }
+.bj-filtros button.on { background: var(--surface2); color: var(--text); }
+.bj-nota { font-size: 12px; color: var(--text3); max-width: 320px; }
+.bj-layout { display: grid; grid-template-columns: 320px 1fr; height: calc(100vh - 230px); min-height: 420px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.bj-lista { border-right: 1px solid var(--border); overflow-y: auto; }
+.bj-conv { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--border); background: transparent; color: var(--text); font-family: var(--font); padding: 13px 16px; cursor: pointer; }
+.bj-conv:hover { background: var(--surface2); }
+.bj-conv.sel { background: var(--green-bg); }
+.bj-conv-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.bj-conv-nombre { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bj-conv-hora { font-size: 11px; color: var(--text3); font-family: var(--mono); flex-shrink: 0; }
+.bj-conv-prev { font-size: 13px; color: var(--text2); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bj-chips { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.bj-chip.borrador { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; color: var(--yellow); border: 1px dashed var(--yellow); }
+.bj-vacio { padding: 40px 20px; color: var(--text3); text-align: center; font-size: 14px; margin: auto; }
+.bj-chat { display: flex; flex-direction: column; min-height: 0; }
+.bj-chat-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+.bj-chat-top strong { display: block; font-size: 15px; }
+.bj-chat-top span { font-size: 12px; color: var(--text3); }
+.bj-aviso-cerrar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 20px; background: var(--yellow-bg); color: var(--yellow); font-size: 13px; }
+.bj-hilo { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+.bj-b { max-width: min(520px, 80%); padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; word-wrap: break-word; }
+.bj-meta { display: block; font-size: 11px; margin-top: 4px; opacity: .7; }
+.bj-b-cliente { align-self: flex-start; background: var(--surface2); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.bj-b-cliente img { display: block; max-width: 220px; max-height: 260px; border-radius: 8px; margin: 2px 0 6px; }
+.bj-b-cliente em { color: var(--text3); font-size: 12px; }
+.bj-b-agente { align-self: flex-end; background: var(--green-bg); color: var(--green); border: 1px solid var(--green-dim); border-bottom-right-radius: 4px; }
+.bj-b-manual { align-self: flex-end; background: transparent; color: var(--text); border: 1px solid var(--green-dim); border-bottom-right-radius: 4px; }
+.bj-b-error { align-self: flex-end; background: var(--red-bg); color: var(--red); font-size: 13px; }
+.bj-b-descartado { align-self: flex-end; color: var(--text3); border: 1px dashed var(--border); text-decoration: line-through; font-size: 13px; }
+.bj-borrador { align-self: flex-end; width: min(560px, 92%); border: 1.5px dashed var(--yellow); background: rgba(234,179,8,.06); border-radius: 14px; padding: 12px 14px; }
+.bj-borrador-tit { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 600; color: var(--yellow); }
+.bj-motivo { font-weight: 500; color: var(--text2); text-align: right; }
+.bj-borrador textarea { background: transparent; border: 0; padding: 6px 0; min-height: 90px; resize: vertical; line-height: 1.5; }
+.bj-borrador textarea:focus { border: 0; }
+.bj-borrador-acc { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.bj-err { color: var(--red); font-size: 12px; margin-top: 6px; min-height: 0; }
+.bj-composer { display: flex; gap: 10px; align-items: flex-end; padding: 12px 16px; border-top: 1px solid var(--border); }
+.bj-composer textarea { resize: none; min-height: 42px; max-height: 140px; }
+.bj-err-composer { padding: 0 16px 8px; }
+.bj-pie { font-size: 12px; color: var(--text3); margin-top: 10px; }

@@ -47,6 +47,9 @@ function mostrarApp(user) {
   }
 
   cargarHome();
+
+  // Bandeja del agente: contador en el menú y avisos (solo admin)
+  if (esAdmin && typeof iniciarBandejaGlobal === 'function') iniciarBandejaGlobal();
 }
 
 async function cerrarSesion() {

@@ -38,6 +38,9 @@
     <div class="nav-item active" onclick="goTo('home',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
     </div>
+    <div class="nav-item admin-only" id="nav-bandeja" onclick="goTo('bandeja',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Bandeja IG <span id="bandeja-count" class="nav-count" style="display:none"></span>
+    </div>
   </div>
   <div class="nav-section">
     <div class="nav-label">Negocio Local</div>
@@ -145,6 +148,13 @@
   </div>
 
   <!-- INVENTARIO -->
+  <!-- BANDEJA DEL AGENTE -->
+  <div id="page-bandeja" class="page">
+    <div class="page-title">Bandeja del agente</div>
+    <div class="page-sub">Revisá, editá y aprobá lo que el agente le responde a los clientes de Instagram</div>
+    <div id="bj-root"></div>
+  </div>
+
   <div id="page-inventario" class="page">
     <div class="page-title">Inventario</div>
     <div class="page-sub">Cargá y administrá tus productos</div>
@@ -922,5 +932,6 @@
 <script src="js/deudores.js"></script>
 <script src="js/movimientos.js"></script>
 <script src="js/scanner.js"></script>
+<script src="js/bandeja.js"></script>
 <script src="js/init.js"></script>
 </html>
