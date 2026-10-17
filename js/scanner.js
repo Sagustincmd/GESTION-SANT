@@ -97,15 +97,15 @@ function imprimirEtiqueta() {
   const w = window.open('', '_blank');
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
   <style>
-    @page { size: 58mm 38mm; margin: 0 !important; }
+    @page { size: 50mm 25mm; margin: 0 !important; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html { margin: 0 !important; padding: 0 !important; }
-    body { width: 58mm; height: 38mm; overflow: hidden; font-family: Arial, sans-serif; background: #fff; margin: 0 !important; padding: 0 !important; }
-    .etiqueta { width: 58mm; height: 38mm; text-align: center; padding: 1mm 2mm 1mm; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; }
-    .marca { font-size: 6.5pt; text-transform: uppercase; letter-spacing: 1px; color: #666; line-height: 1.2; }
-    .modelo { font-size: 10pt; font-weight: 700; color: #000; margin: 0.5mm 0; line-height: 1.2; }
-    .detalle { font-size: 7.5pt; color: #444; margin-bottom: 1mm; line-height: 1.2; }
-    svg { width: 52mm !important; height: 18mm !important; display: block; margin: 0 auto; }
+    body { width: 50mm; height: 25mm; overflow: hidden; font-family: Arial, sans-serif; background: #fff; margin: 0 !important; padding: 0 !important; }
+    .etiqueta { width: 50mm; height: 25mm; text-align: center; padding: 0.5mm 1mm; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; }
+    .marca { font-size: 5.5pt; text-transform: uppercase; letter-spacing: 0.5px; color: #666; line-height: 1.1; }
+    .modelo { font-size: 7.5pt; font-weight: 700; color: #000; margin: 0.2mm 0; line-height: 1.1; }
+    .detalle { font-size: 6.5pt; color: #444; margin-bottom: 0.3mm; line-height: 1.1; }
+    svg { width: 47mm !important; height: 12mm !important; display: block; margin: 0 auto; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   </style>
   </head><body>
