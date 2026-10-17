@@ -1,13 +1,24 @@
 // scanner.js — Escáner y etiquetas
 
+// Genera un código de barras estable y único a partir del ID del producto
+function generarCodigo(id) {
+  // Hash simple pero consistente: siempre da el mismo número para el mismo id
+  let h = 0;
+  for (let i = 0; i < id.length; i++) {
+    h = Math.imul(31, h) + id.charCodeAt(i) | 0;
+  }
+  const n = Math.abs(h) % 10000000000;
+  return '789' + String(n).padStart(10, '0');
+}
+
 // SCANNER
 
 async function cargarScanner() {
   if (!allProductos.length) allProductos = await sb('productos?select=*') || [];
-  // Generar productos demo con codigos
-  scannerProductos = allProductos.slice(0, 8).map((p, i) => ({
+  // Generar productos demo con codigos estables
+  scannerProductos = allProductos.slice(0, 8).map(p => ({
     ...p,
-    codigo: '789000000' + String(i+1).padStart(4,'0')
+    codigo: generarCodigo(p.id)
   }));
   // Render chips demo
   document.getElementById('scan-chips').innerHTML = scannerProductos.map(p =>
@@ -30,13 +41,17 @@ document.addEventListener('input', e => {
   }
 });
 
-function procesarScan() {
+async function procesarScan() {
   const codigo = document.getElementById('scan-input').value.trim();
   if (!codigo) return;
-  const prod = scannerProductos.find(p => p.codigo === codigo);
   const resEl = document.getElementById('scan-resultado');
   const boxEl = document.getElementById('scan-resultado-box');
   resEl.style.display = 'block';
+
+  // Buscar primero en todos los productos cargados usando código generado
+  if (!allProductos.length) allProductos = await sb('productos?select=*') || [];
+  const prod = allProductos.find(p => generarCodigo(p.id) === codigo);
+
   if (prod) {
     boxEl.style.borderColor = 'var(--green)';
     document.getElementById('scan-nombre').textContent = prod.modelo;
@@ -74,7 +89,7 @@ function seleccionarEtiqueta(id) {
   document.getElementById('etiq-marca-r').textContent = p.marca || '';
   document.getElementById('etiq-modelo-r').textContent = p.modelo || '';
   document.getElementById('etiq-detalle-r').textContent = 'T' + (p.talle||'') + ' · ' + (p.color||'');
-  const codigo = '789' + p.id.replace(/[^0-9]/g,'').slice(0,10).padEnd(10,'0');
+  const codigo = generarCodigo(p.id);
   JsBarcode('#etiq-barcode', codigo, {
     format: 'CODE128', width: 1.5, height: 40,
     displayValue: true, fontSize: 10, margin: 4,
