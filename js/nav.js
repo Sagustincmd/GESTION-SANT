@@ -21,6 +21,7 @@ function goTo(page, el) {
   if (page === 'compras') cargarCompras();
   if (page === 'caja') cargarCaja();
   if (page === 'scanner') cargarScanner();
+  if (page === 'controlstock') cargarControlStock();
   if (page === 'bandeja') cargarBandeja();
 }
 
