@@ -58,14 +58,48 @@ async function procesarScan() {
     document.getElementById('scan-detalle').textContent = prod.marca + ' · T' + prod.talle + ' · ' + (prod.color||'');
     document.getElementById('scan-precio').textContent = fmt(prod.precio);
     document.getElementById('scan-stock').textContent = 'Stock: ' + (prod.stock||0) + ' unidades';
+    renderTallesModelo(prod);
   } else {
     boxEl.style.borderColor = 'var(--red)';
     document.getElementById('scan-nombre').textContent = 'Producto no encontrado';
     document.getElementById('scan-detalle').textContent = 'Código: ' + codigo;
     document.getElementById('scan-precio').textContent = '—';
     document.getElementById('scan-stock').textContent = '';
+    document.getElementById('scan-talles').style.display = 'none';
   }
   setTimeout(() => document.getElementById('scan-input').value = '', 1000);
+}
+
+function renderTallesModelo(prod) {
+  const tallesEl = document.getElementById('scan-talles');
+  // Buscar todos los productos del mismo modelo y marca (sin importar talle/color)
+  const hermanos = allProductos.filter(p =>
+    p.modelo === prod.modelo && p.marca === prod.marca
+  ).sort((a, b) => {
+    // Ordenar talles numéricamente si es posible, sino alfabético
+    const na = parseFloat(a.talle), nb = parseFloat(b.talle);
+    return isNaN(na) || isNaN(nb) ? String(a.talle).localeCompare(String(b.talle)) : na - nb;
+  });
+  if (hermanos.length <= 1) { tallesEl.style.display = 'none'; return; }
+  const stockTotal = hermanos.reduce((s, p) => s + (p.stock || 0), 0);
+  tallesEl.style.display = 'block';
+  tallesEl.innerHTML = `
+    <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">
+      Talles disponibles — ${prod.modelo} ${prod.marca} <span style="font-weight:400">(total: ${stockTotal})</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${hermanos.map(p => {
+        const stock = p.stock || 0;
+        const esActual = p.id === prod.id;
+        const color = stock === 0 ? 'var(--red)' : stock <= 2 ? 'var(--yellow,#f59e0b)' : 'var(--green)';
+        const bg = esActual ? 'var(--primary)' : 'var(--surface2)';
+        const textColor = esActual ? '#fff' : color;
+        return `<div style="background:${bg};border-radius:8px;padding:6px 10px;text-align:center;min-width:48px;border:1.5px solid ${esActual ? 'var(--primary)' : color}">
+          <div style="font-size:13px;font-weight:700;color:${textColor}">T${p.talle}</div>
+          <div style="font-size:10px;color:${esActual ? 'rgba(255,255,255,0.8)' : color}">${stock}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 // ETIQUETAS — Cola de impresión masiva
