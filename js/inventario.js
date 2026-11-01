@@ -24,10 +24,17 @@ function filtrarInventario() {
 
 function renderInventario() {
   const tbody = document.getElementById('inv-tbody');
-  if (!invFiltrado.length) { tbody.innerHTML = '<tr><td colspan="10" class="loading">Sin resultados</td></tr>'; return; }
+  if (!invFiltrado.length) { tbody.innerHTML = '<tr><td colspan="11" class="loading">Sin resultados</td></tr>'; return; }
   tbody.innerHTML = invFiltrado.map(p => {
     const margen = p.precio > 0 ? Math.round((p.precio - p.costo) / p.precio * 100) : 0;
     const estado = p.stock <= 0 ? '<span class="badge badge-red">Sin stock</span>' : p.stock <= 2 ? '<span class="badge badge-yellow">Bajo</span>' : '<span class="badge badge-green">OK</span>';
+    const fotos = p.fotos && p.fotos.length ? p.fotos : [];
+    const fotosHtml = fotos.length
+      ? `<div style="display:flex;gap:4px;align-items:center">
+          ${fotos.slice(0,3).map(url => `<img src="${url}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="verFotos('${p.id}')">`).join('')}
+          ${fotos.length < 3 ? `<button class="btn btn-secondary btn-sm" onclick="subirFotos('${p.id}')" title="Agregar fotos">+</button>` : ''}
+        </div>`
+      : `<button class="btn btn-secondary btn-sm" onclick="subirFotos('${p.id}')">📷 Subir</button>`;
     return `<tr>
       <td><strong>${p.modelo||''}</strong></td><td>${p.marca||''}</td><td>${p.color||''}</td>
       <td class="mono">${p.talle||''}</td><td class="mono">${fmt(p.costo)}</td><td class="mono">${fmt(p.precio)}</td>
@@ -37,11 +44,55 @@ function renderInventario() {
         <button class="btn btn-secondary btn-sm" onclick="actualizarStockBtn(this)">✓</button>
       </div></td>
       <td>${estado}</td>
+      <td>${fotosHtml}</td>
       <td style="display:flex;gap:4px">
         <button class="btn btn-secondary btn-sm" onclick="abrirEditar('${p.id}')">✏</button>
         <button class="btn btn-danger btn-sm" onclick="eliminarProducto('${p.id}')">✕</button>
       </td></tr>`;
   }).join('');
+}
+
+async function subirFotos(id) {
+  const p = allProductos.find(x => x.id === id);
+  const fotosActuales = (p && p.fotos) ? [...p.fotos] : [];
+  const restantes = 3 - fotosActuales.length;
+  if (restantes <= 0) { toast('Ya tiene 3 fotos. Editá el producto para reemplazarlas.', 'error'); return; }
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = true;
+  input.onchange = async () => {
+    const archivos = Array.from(input.files).slice(0, restantes);
+    if (!archivos.length) return;
+    toast('Subiendo fotos...');
+    const sbClient = window.supabase.createClient(SB_URL, SB_KEY);
+    for (const archivo of archivos) {
+      const ext = archivo.name.split('.').pop();
+      const path = id + '/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
+      const { error } = await sbClient.storage.from('fotos-productos').upload(path, archivo, { upsert: true });
+      if (!error) {
+        const { data } = sbClient.storage.from('fotos-productos').getPublicUrl(path);
+        fotosActuales.push(data.publicUrl);
+      }
+    }
+    await sb('productos?id=eq.' + id, { method: 'PATCH', body: { fotos: fotosActuales }, prefer: 'return=minimal' });
+    if (p) p.fotos = fotosActuales;
+    toast('✓ ' + archivos.length + ' foto' + (archivos.length > 1 ? 's' : '') + ' guardada' + (archivos.length > 1 ? 's' : ''));
+    renderInventario();
+  };
+  input.click();
+}
+
+function verFotos(id) {
+  const p = allProductos.find(x => x.id === id);
+  if (!p || !p.fotos || !p.fotos.length) return;
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;cursor:pointer';
+  overlay.onclick = () => overlay.remove();
+  overlay.innerHTML = p.fotos.map(url =>
+    `<img src="${url}" style="max-height:80vh;max-width:30vw;border-radius:10px;object-fit:contain">`
+  ).join('') + `<button style="position:fixed;top:20px;right:20px;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:15px">✕ Cerrar</button>`;
+  document.body.appendChild(overlay);
 }
 
 // CARGA MASIVA
