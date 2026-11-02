@@ -61,12 +61,10 @@ async function subirFotos(id) {
   input.type = 'file';
   input.accept = 'image/*';
   input.multiple = true;
-  const _url = SB_URL, _key = SB_KEY;
   input.onchange = async () => {
     const archivos = Array.from(input.files).slice(0, restantes);
     if (!archivos.length) return;
     toast('Subiendo fotos...');
-    const sbClient = window.supabase.createClient(_url, _key);
     for (const archivo of archivos) {
       const ext = archivo.name.split('.').pop();
       const path = id + '/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
