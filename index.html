@@ -205,8 +205,8 @@
           <div class="search-input"><input id="inv-search" placeholder="Buscar por modelo, marca, color, talle..." oninput="filtrarInventario()" style="width:320px"></div>
         </div>
       </div>
-      <table><thead><tr><th>Modelo</th><th>Marca</th><th>Color</th><th>Talle</th><th>Costo</th><th>Precio</th><th>Margen</th><th>Stock</th><th>Estado</th><th>Fotos</th><th>Acciones</th></tr></thead>
-      <tbody id="inv-tbody"><tr><td colspan="11" class="loading"><span class="spinner"></span>Cargando...</td></tr></tbody></table>
+      <table><thead><tr><th>Código</th><th>Modelo</th><th>Marca</th><th>Color</th><th>Talle</th><th>Costo</th><th>Precio</th><th>Margen</th><th>Stock</th><th>Estado</th><th>Fotos</th><th>Acciones</th></tr></thead>
+      <tbody id="inv-tbody"><tr><td colspan="12" class="loading"><span class="spinner"></span>Cargando...</td></tr></tbody></table>
     </div>
   </div>
 
@@ -947,6 +947,9 @@
       <div><label>Costo ($)</label><input id="edit-costo" type="number"></div>
       <div><label>Precio ($)</label><input id="edit-precio" type="number"></div>
       <div><label>Stock</label><input id="edit-stock" type="number"></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label>Código</label><input id="edit-codigo" style="font-family:var(--mono)">
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="cerrarEditar()">Cancelar</button>
