@@ -41,7 +41,7 @@ function filtrarInventario() {
 
 function renderInventario() {
   const tbody = document.getElementById('inv-tbody');
-  if (!invFiltrado.length) { tbody.innerHTML = '<tr><td colspan="11" class="loading">Sin resultados</td></tr>'; return; }
+  if (!invFiltrado.length) { tbody.innerHTML = '<tr><td colspan="12" class="loading">Sin resultados</td></tr>'; return; }
   tbody.innerHTML = invFiltrado.map(p => {
     const margen = p.precio > 0 ? Math.round((p.precio - p.costo) / p.precio * 100) : 0;
     const estado = p.stock <= 0 ? '<span class="badge badge-red">Sin stock</span>' : p.stock <= 2 ? '<span class="badge badge-yellow">Bajo</span>' : '<span class="badge badge-green">OK</span>';
@@ -52,7 +52,11 @@ function renderInventario() {
           ${fotos.length < 3 ? `<button class="btn btn-secondary btn-sm" onclick="subirFotos('${p.id}')" title="Agregar fotos">+</button>` : ''}
         </div>`
       : `<button class="btn btn-secondary btn-sm" onclick="subirFotos('${p.id}')">📷 Subir</button>`;
+    const codigoBadge = p.codigo
+      ? `<span style="font-family:var(--mono);font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text2);letter-spacing:.5px">${p.codigo}</span>`
+      : `<span style="font-size:11px;color:var(--text3)">—</span>`;
     return `<tr>
+      <td>${codigoBadge}</td>
       <td><strong>${p.modelo||''}</strong></td><td>${p.marca||''}</td><td>${p.color||''}</td>
       <td class="mono">${p.talle||''}</td><td class="mono">${fmt(p.costo)}</td><td class="mono">${fmt(p.precio)}</td>
       <td class="mono ${margen>0?'green':'red'}">${margen}%</td>
@@ -241,6 +245,8 @@ function abrirEditar(id) {
   document.getElementById('edit-costo').value = p.costo || 0;
   document.getElementById('edit-precio').value = p.precio || 0;
   document.getElementById('edit-stock').value = p.stock || 0;
+  const editCodigo = document.getElementById('edit-codigo');
+  if (editCodigo) editCodigo.value = p.codigo || '';
   document.getElementById('modal-editar').classList.add('open');
 }
 
@@ -250,6 +256,7 @@ function cerrarEditar() {
 
 async function guardarEditar() {
   const id = document.getElementById('edit-id').value;
+  const editCodigoEl = document.getElementById('edit-codigo');
   const datos = {
     modelo: document.getElementById('edit-modelo').value.trim(),
     marca: document.getElementById('edit-marca').value.trim(),
@@ -258,7 +265,9 @@ async function guardarEditar() {
     costo: +document.getElementById('edit-costo').value || 0,
     precio: +document.getElementById('edit-precio').value || 0,
     stock: +document.getElementById('edit-stock').value || 0,
+    codigo: editCodigoEl ? editCodigoEl.value.trim() : undefined,
   };
+  if (!datos.codigo) delete datos.codigo;
   await sb('productos?id=eq.' + id, { method: 'PATCH', body: datos, prefer: 'return=minimal' });
   toast('Producto actualizado ✓');
   cerrarEditar();
