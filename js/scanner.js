@@ -1,7 +1,8 @@
 // scanner.js — Escáner y etiquetas
 
 // Genera un código de barras estable y único a partir del ID del producto
-function generarCodigo(id) {
+// NOTA: renombrada a generarCodigoBarras para no colisionar con generarCodigo() de inventario.js
+function generarCodigoBarras(id) {
   // Hash simple pero consistente: siempre da el mismo número para el mismo id
   let h = 0;
   for (let i = 0; i < id.length; i++) {
@@ -18,17 +19,17 @@ async function cargarScanner() {
   // Generar productos demo con codigos estables
   scannerProductos = allProductos.slice(0, 8).map(p => ({
     ...p,
-    codigo: generarCodigo(p.id)
+    codigoBarras: generarCodigoBarras(p.id)
   }));
   // Render chips demo
   document.getElementById('scan-chips').innerHTML = scannerProductos.map(p =>
-    `<span class="prod-chip" onclick="simularScan('${p.codigo}')">${p.modelo} T${p.talle} ${p.color||''}</span>`
+    `<span class="prod-chip" onclick="simularScan('${p.codigoBarras}')">${p.modelo} T${p.talle} ${p.color||''}</span>`
   ).join('');
   document.getElementById('scan-input').focus();
 }
 
-function simularScan(codigo) {
-  document.getElementById('scan-input').value = codigo;
+function simularScan(codigoBarras) {
+  document.getElementById('scan-input').value = codigoBarras;
   procesarScan();
 }
 
@@ -42,15 +43,15 @@ document.addEventListener('input', e => {
 });
 
 async function procesarScan() {
-  const codigo = document.getElementById('scan-input').value.trim();
-  if (!codigo) return;
+  const codigoBarras = document.getElementById('scan-input').value.trim();
+  if (!codigoBarras) return;
   const resEl = document.getElementById('scan-resultado');
   const boxEl = document.getElementById('scan-resultado-box');
   resEl.style.display = 'block';
 
   // Buscar primero en todos los productos cargados usando código generado
   if (!allProductos.length) allProductos = await sb('productos?select=*') || [];
-  const prod = allProductos.find(p => generarCodigo(p.id) === codigo);
+  const prod = allProductos.find(p => generarCodigoBarras(p.id) === codigoBarras);
 
   if (prod) {
     boxEl.style.borderColor = 'var(--green)';
@@ -62,7 +63,7 @@ async function procesarScan() {
   } else {
     boxEl.style.borderColor = 'var(--red)';
     document.getElementById('scan-nombre').textContent = 'Producto no encontrado';
-    document.getElementById('scan-detalle').textContent = 'Código: ' + codigo;
+    document.getElementById('scan-detalle').textContent = 'Código: ' + codigoBarras;
     document.getElementById('scan-precio').textContent = '—';
     document.getElementById('scan-stock').textContent = '';
     document.getElementById('scan-talles').style.display = 'none';
@@ -128,10 +129,10 @@ function agregarALaCola(id) {
   }
   document.getElementById('etiq-search').value = '';
   document.getElementById('etiq-lista').innerHTML = '';
-  const codigo = generarCodigo(p.id);
+  const codigoBarras = generarCodigoBarras(p.id);
   if (!scannerProductos.find(x => x.id === id)) {
-    scannerProductos.push({ ...p, codigo });
-    document.getElementById('scan-chips').innerHTML += `<span class="prod-chip" onclick="simularScan('${codigo}')" style="border-color:var(--green);color:var(--green)">★ ${p.modelo} T${p.talle}</span>`;
+    scannerProductos.push({ ...p, codigoBarras });
+    document.getElementById('scan-chips').innerHTML += `<span class="prod-chip" onclick="simularScan('${codigoBarras}')" style="border-color:var(--green);color:var(--green)">★ ${p.modelo} T${p.talle}</span>`;
   }
   renderCola();
   toast('Agregado a la cola: ' + p.modelo);
@@ -185,12 +186,12 @@ function imprimirTodas() {
 
   let etiquetasHtml = '';
   for (const item of colaEtiquetas) {
-    const codigo = generarCodigo(item.id);
+    const codigoBarras = generarCodigoBarras(item.id);
     const svgNS = 'http://www.w3.org/2000/svg';
     const svgEl = document.createElementNS(svgNS, 'svg');
     svgEl.setAttribute('id', '_tmp_bc_' + item.id);
     document.body.appendChild(svgEl);
-    JsBarcode('#_tmp_bc_' + item.id, codigo, {
+    JsBarcode('#_tmp_bc_' + item.id, codigoBarras, {
       format: 'CODE128', width: 1.5, height: 40,
       displayValue: true, fontSize: 10, margin: 4,
       lineColor: '#000', background: '#fff'
@@ -210,19 +211,19 @@ function imprimirTodas() {
 
   const w = window.open('', '_blank');
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <style>
-    @page { size: 50mm 25mm; margin: 0 !important; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { margin: 0 !important; padding: 0 !important; }
-    body { font-family: Arial, sans-serif; background: #fff; margin: 0 !important; padding: 0 !important; }
-    .etiqueta { width: 50mm; height: 25mm; text-align: center; padding: 0.5mm 1mm; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-after: always; }
-    .marca { font-size: 5.5pt; text-transform: uppercase; letter-spacing: 0.5px; color: #666; line-height: 1.1; }
-    .modelo { font-size: 7.5pt; font-weight: 700; color: #000; margin: 0.2mm 0; line-height: 1.1; }
-    .detalle { font-size: 6.5pt; color: #444; margin-bottom: 0.3mm; line-height: 1.1; }
-    svg { width: 47mm !important; height: 12mm !important; display: block; margin: 0 auto; }
-    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  </style>
-  </head><body>${etiquetasHtml}</body></html>`);
+<style>
+@page { size: 50mm 25mm; margin: 0 !important; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { margin: 0 !important; padding: 0 !important; }
+body { font-family: Arial, sans-serif; background: #fff; margin: 0 !important; padding: 0 !important; }
+.etiqueta { width: 50mm; height: 25mm; text-align: center; padding: 0.5mm 1mm; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-after: always; }
+.marca { font-size: 5.5pt; text-transform: uppercase; letter-spacing: 0.5px; color: #666; line-height: 1.1; }
+.modelo { font-size: 7.5pt; font-weight: 700; color: #000; margin: 0.2mm 0; line-height: 1.1; }
+.detalle { font-size: 6.5pt; color: #444; margin-bottom: 0.3mm; line-height: 1.1; }
+svg { width: 47mm !important; height: 12mm !important; display: block; margin: 0 auto; }
+* { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+</style>
+</head><body>${etiquetasHtml}</body></html>`);
   w.document.close();
   setTimeout(() => w.print(), 400);
 }
