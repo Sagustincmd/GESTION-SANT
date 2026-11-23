@@ -1,5 +1,22 @@
 // inventario.js — Gestión de inventario
 
+// GENERADOR DE CÓDIGO AUTOMÁTICO
+// Formato: MARCA-MODELO-###  ej: NIK-DUNLOW-001
+function generarCodigo(modelo, marca) {
+  function abrev(str) {
+    return str.trim().toUpperCase()
+      .replace(/[^A-Z0-9\s]/g, '')
+      .split(/\s+/)
+      .map(w => w.slice(0, 3))
+      .join('');
+  }
+  const base = abrev(marca) + '-' + abrev(modelo);
+  // Cuenta cuántos productos ya tienen ese mismo base de código
+  const existentes = allProductos.filter(p => p.codigo && p.codigo.startsWith(base + '-')).length;
+  const num = String(existentes + 1).padStart(3, '0');
+  return base + '-' + num;
+}
+
 // INVENTARIO
 async function cargarInventario() {
   initInvTalles();
@@ -168,10 +185,11 @@ async function guardarMercaderia() {
   document.getElementById('inv-btn-guardar').style.display = 'none';
   document.getElementById('inv-guardando').style.display = 'block';
 
+  const codigo = generarCodigo(modelo, marca);
   let creados = 0;
   for (const item of items) {
     const prod = {
-      id: crypto.randomUUID(), modelo, marca, color,
+      id: crypto.randomUUID(), modelo, marca, color, codigo,
       talle: item.talle, costo, precio, stock: item.qty,
       sucursal: currentSucursal,
       creado_en: new Date().toISOString()
@@ -185,7 +203,6 @@ async function guardarMercaderia() {
   document.getElementById('inv-guardando').style.display = 'none';
   toast(`✓ ${creados} productos guardados correctamente`);
 
-  // Reset form
   ['inv-modelo','inv-marca','inv-color'].forEach(id => document.getElementById(id).value = '');
   ['inv-costo','inv-precio'].forEach(id => document.getElementById(id).value = '0');
   document.getElementById('inv-qty-default').value = '1';
