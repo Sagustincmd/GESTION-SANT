@@ -108,9 +108,12 @@ async function registrarVenta() {
   document.getElementById('venta-cliente-search').value = '';
   document.getElementById('venta-cliente-id').value = '';
   document.getElementById('venta-cliente-nombre').value = '';
+  allVentas.unshift(venta);
   ventaFiltro = 'hoy';
   ventaMesEspecifico = '';
-  cargarVentas();
+  aplicarFiltroVentas();
+  // Refrescar en background para sincronizar
+  sb(esAdmin ? 'ventas?select=*&order=fecha.desc,registrado_en.desc' : 'ventas?select=*&order=fecha.desc,registrado_en.desc&sucursal=eq.' + currentSucursal).then(data => { if (data) { allVentas = data; aplicarFiltroVentas(); } });
 }
 
 async function eliminarVenta(id) {
