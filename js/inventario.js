@@ -2,7 +2,9 @@
 
 // GENERADOR DE CÓDIGO AUTOMÁTICO
 // Formato: MARCA-MODELO-###  ej: NIK-DUNLOW-001
-function generarCodigo(modelo, marca) {
+// Si ya existe un producto con mismo modelo+marca+color, reutiliza ese código.
+// Si no existe, genera uno nuevo secuencial.
+function generarCodigo(modelo, marca, color) {
   function abrev(str) {
     return str.trim().toUpperCase()
       .replace(/[^A-Z0-9\s]/g, '')
@@ -10,8 +12,18 @@ function generarCodigo(modelo, marca) {
       .map(w => w.slice(0, 3))
       .join('');
   }
+  // Buscar si ya existe ese modelo+marca+color
+  const colorNorm = (color || '').trim().toLowerCase();
+  const existing = allProductos.find(p =>
+    p.codigo &&
+    (p.modelo || '').trim().toLowerCase() === modelo.trim().toLowerCase() &&
+    (p.marca || '').trim().toLowerCase() === marca.trim().toLowerCase() &&
+    (p.color || '').trim().toLowerCase() === colorNorm
+  );
+  if (existing) return existing.codigo;
+
+  // No existe — generar código nuevo secuencial
   const base = abrev(marca) + '-' + abrev(modelo);
-  // Cuenta cuántos productos ya tienen ese mismo base de código
   const existentes = allProductos.filter(p => p.codigo && p.codigo.startsWith(base + '-')).length;
   const num = String(existentes + 1).padStart(3, '0');
   return base + '-' + num;
@@ -189,7 +201,7 @@ async function guardarMercaderia() {
   document.getElementById('inv-btn-guardar').style.display = 'none';
   document.getElementById('inv-guardando').style.display = 'block';
 
-  const codigo = generarCodigo(modelo, marca);
+  const codigo = generarCodigo(modelo, marca, color);
   let creados = 0;
   for (const item of items) {
     const prod = {
