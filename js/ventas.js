@@ -108,6 +108,8 @@ async function registrarVenta() {
   document.getElementById('venta-cliente-search').value = '';
   document.getElementById('venta-cliente-id').value = '';
   document.getElementById('venta-cliente-nombre').value = '';
+  ventaFiltro = 'hoy';
+  ventaMesEspecifico = '';
   cargarVentas();
 }
 
