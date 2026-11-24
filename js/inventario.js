@@ -41,7 +41,7 @@ async function cargarInventario() {
 
 function matchTerminos(p, q) {
   const terminos = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const campos = [p.modelo||'', p.marca||'', p.color||'', String(p.talle||'')].map(c => c.toLowerCase());
+  const campos = [p.modelo||'', p.marca||'', p.color||'', String(p.talle||''), p.codigo||''].map(c => c.toLowerCase());
   return terminos.every(t => campos.some(c => c.includes(t)));
 }
 
